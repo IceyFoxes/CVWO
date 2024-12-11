@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"strconv"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -12,21 +13,24 @@ import (
 )
 
 // Helper function to validate content of created thread
-func validateThread(db *sql.DB, thread *struct {
+func validateThread(db *sql.DB, isEdit bool, thread *struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }) []string {
-	var errors []string
+	var errors []string;
 
 	// List of prohibited words
-	var prohibitedWords = []string{"internship", "CVWO", "summer", "CAP 5.0", "GPA 5.0"}
-
+	var prohibitedWords = []string{"internship", "cvwo", "summer", "cap 5.0", "gpa 5.0"}
 	// Check for prohibited words in the title or content
 	for _, word := range prohibitedWords {
-		if strings.Contains(strings.ToLower(thread.Title), word) {
-			errors = append(errors, fmt.Sprintf("Title contains prohibited word: %s", word))
-		}
-		if strings.Contains(strings.ToLower(thread.Content), word) {
+		// Convert both title and content to lowercase for case-insensitive comparison
+		title := strings.ToLower(thread.Title)
+		content := strings.ToLower(thread.Content)
+
+		if strings.Contains(title, word) {
+				errors = append(errors, fmt.Sprintf("Title contains prohibited word: %s", word))
+			}
+		if strings.Contains(content, word) {
 			errors = append(errors, fmt.Sprintf("Content contains prohibited word: %s", word))
 		}
 	}
@@ -47,14 +51,17 @@ func validateThread(db *sql.DB, thread *struct {
 		errors = append(errors, "Content must be no more than 1000 characters long")
 	}
 
-	// Check if the title is unique
-	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM threads WHERE title = ?", thread.Title).Scan(&count)
-	if err != nil {
-		log.Printf("Error checking title uniqueness: %v", err)
-		errors = append(errors, "Error checking title uniqueness")
-	} else if count > 0 {
-		errors = append(errors, "Title must be unique")
+	// If it's not an edit (i.e., creating a new thread), check title uniqueness
+	if !isEdit {
+		// Check if the title is unique
+		var count int
+		err := db.QueryRow("SELECT COUNT(*) FROM threads WHERE title = ?", thread.Title).Scan(&count)
+		if err != nil {
+			log.Printf("Error checking title uniqueness: %v", err)
+			errors = append(errors, "Error checking title uniqueness")
+		} else if count > 0 {
+			errors = append(errors, "Title must be unique")
+		}
 	}
 
 	return errors
@@ -74,34 +81,27 @@ func isAdmin(db *sql.DB, username string) (bool, error) {
 }
 
 // Helper function to check if the user is the owner of the thread or an admin
-func checkThreadOwnershipOrAdmin(db *sql.DB, username string, userID int, threadID string) (bool, error) {
-	var threadCreatorID int
+func checkThreadOwnershipOrAdmin(db *sql.DB, username string, userID int, threadID string) bool {
+    // Check if the thread exists and get the user_id (thread creator)
+    var threadCreatorID int
+    err := db.QueryRow("SELECT user_id FROM threads WHERE id = ?", threadID).Scan(&threadCreatorID)
+    if err != nil {
+        return false // If thread does not exist or there is an error, deny access
+    }
 
-	// Check if the thread exists and get the user_id (thread creator)
-	err := db.QueryRow("SELECT user_id FROM threads WHERE id = ?", threadID).Scan(&threadCreatorID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, fmt.Errorf("Thread not found")
-		}
-		return false, fmt.Errorf("Failed to fetch thread information")
-	}
+    // If the user is the thread owner, return true
+    if userID == threadCreatorID {
+        return true
+    }
 
-	// Check if the current user is the owner of the thread
-	if userID == threadCreatorID {
-		return true, nil
-	}
+    // Check if the user is an admin
+    isAdmin, err := isAdmin(db, username)
+    if err != nil {
+        return false // If there's an error in checking admin status, deny access
+    }
 
-	// If the user is not the thread owner, check if the user is an admin
-	isAdmin, err := isAdmin(db, username)
-	if err != nil {
-		return false, fmt.Errorf("Failed to check admin status")
-	}
-
-	if isAdmin {
-		return true, nil // Admins can modify any thread
-	}
-
-	return false, fmt.Errorf("You are not authorized to modify this thread")
+    // If the user is an admin, allow modification
+    return isAdmin
 }
 
 // Helper function to get user ID from username and validate username existence
@@ -184,6 +184,18 @@ func initializeDatabase() (*sql.DB, error) {
 	return db, nil
 }
 
+// Helper function to calculate total pages
+func calculateTotalPages(db *sql.DB, searchQuery string, limit int) int {
+	var totalCount int
+	err := db.QueryRow("SELECT COUNT(*) FROM threads WHERE title LIKE ? OR content LIKE ?", "%"+searchQuery+"%", "%"+searchQuery+"%").Scan(&totalCount)
+	if err != nil {
+		log.Printf("Error calculating total pages: %v", err)
+		return 0
+	}
+	totalPages := (totalCount + limit - 1) / limit // Calculate total pages
+	return totalPages
+}
+
 func main() {
 	db, err := initializeDatabase()
 	if err != nil {
@@ -256,16 +268,53 @@ func main() {
 		c.JSON(200, gin.H{"message": "User authenticated!"})
 	})
 
-	// Route to view all threads
+	// Route to get threads with pagination
 	r.GET("/threads", func(c *gin.Context) {
-		// Fetch all threads
-		rows, err := db.Query("SELECT id, title, content FROM threads")
+		// Retrieve query parameters for search and sorting
+		searchQuery := c.DefaultQuery("search", "") // Search query parameter
+		sortBy := c.DefaultQuery("sortBy", "created_at") // Sort by field, default is "created_at"
+		sortOrder := c.DefaultQuery("sortOrder", "asc") // Sort order (asc or desc), default is "asc"
+	
+		// Validate the `sortBy` parameter
+		validSortColumns := map[string]bool{"id": true, "title": true, "content": true, "created_at": true}
+		if !validSortColumns[sortBy] {
+			sortBy = "created_at" // Default to sorting by "created_at"
+		}
+	
+		// Validate the `sortOrder` parameter
+		if strings.ToLower(sortOrder) != "asc" && strings.ToLower(sortOrder) != "desc" {
+			sortOrder = "asc" // Default to ascending order
+		}
+	
+		// Handle pagination
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1")) // Default to page 1 if not provided
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "3")) // Default to 3 threads per page
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 3
+		}
+	
+		offset := (page - 1) * limit // Calculate offset for pagination
+	
+		// Build the SQL query dynamically
+		query := fmt.Sprintf(`
+			SELECT id, title, content 
+			FROM threads 
+			WHERE title LIKE ? OR content LIKE ? 
+			ORDER BY %s %s 
+			LIMIT ? OFFSET ?`, sortBy, sortOrder)
+	
+		// Execute the query with the search term
+		rows, err := db.Query(query, "%"+searchQuery+"%", "%"+searchQuery+"%", limit, offset)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "Failed to fetch threads"})
 			return
 		}
 		defer rows.Close()
-
+	
+		// Parse results into a slice of threads
 		var threads []gin.H
 		for rows.Next() {
 			var id int
@@ -280,15 +329,20 @@ func main() {
 				"content": content,
 			})
 		}
-
-		// Handle empty threads case
+	
+		// If no threads are found, return an empty array
 		if len(threads) == 0 {
-			c.JSON(200, gin.H{"threads": []interface{}{}}) // Return an empty array
-			return
-		}
-
-		c.JSON(200, threads)
-	})
+        c.JSON(200, gin.H{"threads": []interface{}{}}) // Respond with an empty array
+        return
+    }
+	
+		// Return the fetched threads
+		c.JSON(200, gin.H{
+			"threads":    threads,
+			"currentPage": page,
+			"totalPages": calculateTotalPages(db, searchQuery, limit), // Helper function to calculate total pages
+		})
+	})		
 
 	// Route to view single thread
 	r.GET("/threads/:id", func(c *gin.Context) {
@@ -342,7 +396,7 @@ func main() {
 		}
 
 		// Validate the thread data
-		errors := validateThread(db, &thread)
+		errors := validateThread(db, false, &thread)
 		if len(errors) > 0 {
 			c.JSON(400, gin.H{"errors": errors}) // Send validation errors
 			return
@@ -360,57 +414,100 @@ func main() {
 
 	// Route to update a thread
 	r.PUT("/threads/:id", func(c *gin.Context) {
-		// Get the username from the query or header
+		// Get the username from the query
 		username := c.DefaultQuery("username", "")
-
+	
 		// Validate and get the user ID using the helper function
 		userID, err := getUserIDFromUsername(db, username)
 		if err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
 			return
 		}
-
+	
 		// Get the thread ID from the URL parameter
 		threadID := c.Param("id")
-
+	
 		// Check ownership or admin status
-		authorized, err := checkThreadOwnershipOrAdmin(db, username, userID, threadID)
+		authorized := checkThreadOwnershipOrAdmin(db, username, userID, threadID)
 		if !authorized {
 			c.JSON(403, gin.H{"error": "You are not authorized to edit this thread"})
 			return
 		}
-
-		if err != nil {
-			c.JSON(403, gin.H{"error": err.Error()})
-			return
-		}
-
+	
 		// Bind the incoming JSON request to the struct for thread data
 		var thread struct {
 			Title   string `json:"title"`
 			Content string `json:"content"`
 		}
-
+	
 		if err := c.ShouldBindJSON(&thread); err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
 			return
 		}
-
-		// Validate the thread data
-		errors := validateThread(db, &thread)
+	
+		// Validate the thread data 
+		errors := validateThread(db, true, &thread)
 		if len(errors) > 0 {
 			c.JSON(400, gin.H{"errors": errors}) // Send validation errors
 			return
 		}
-
-		// Update the thread in the database
-		_, err = db.Exec("UPDATE threads SET title = ?, content = ? WHERE id = ?", thread.Title, thread.Content, threadID)
+	
+		// Prepare the SQL query for partial update, ensuring that empty fields are not included in the update
+		updateQuery := "UPDATE threads SET"
+		params := []interface{}{}
+	
+		if thread.Title != "" {
+			updateQuery += " title = ?,"
+			params = append(params, thread.Title)
+		}
+	
+		if thread.Content != "" {
+			updateQuery += " content = ?,"
+			params = append(params, thread.Content)
+		}
+	
+		// Remove the trailing comma
+		updateQuery = updateQuery[:len(updateQuery)-1]
+	
+		// Finalize the query with the thread ID
+		updateQuery += " WHERE id = ?"
+		params = append(params, threadID)
+	
+		// Execute the update query
+		_, err = db.Exec(updateQuery, params...)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "Failed to edit thread"})
 			return
 		}
-
+	
 		c.JSON(200, gin.H{"message": "Thread edited!"})
+	})	
+
+	// Route to check edit thread authorization
+	r.GET("/threads/:id/authorize", func(c *gin.Context) {
+		// Get username from query
+		username := c.DefaultQuery("username", "")
+	
+		// Fetch user ID
+		userID, err := getUserIDFromUsername(db, username)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "Invalid userID"})
+			return
+		}
+		
+		// Get thread ID
+		threadID := c.Param("id")
+	
+		// Check if the user is authorized (owner or admin)
+		authorized := checkThreadOwnershipOrAdmin(db, username, userID, threadID)
+
+		// If the user is not authorized
+		if !authorized {
+			c.JSON(403, gin.H{"authorized" : false, "error": "You are not authorized to modify this thread"})
+			return
+		}
+
+		c.JSON(200, gin.H{"authorized" : true, "message": "User is authorized to modify this thread"})
 	})
 
 	// Route to delete a thread
@@ -429,14 +526,9 @@ func main() {
 		threadID := c.Param("id")
 
 		// Check ownership or admin status
-		authorized, err := checkThreadOwnershipOrAdmin(db, username, userID, threadID)
+		authorized := checkThreadOwnershipOrAdmin(db, username, userID, threadID)
 		if !authorized {
 			c.JSON(403, gin.H{"error": "You are not authorized to delete this thread"})
-			return
-		}
-
-		if err != nil {
-			c.JSON(403, gin.H{"error": err.Error()})
 			return
 		}
 

@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from "react-router-dom";
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
+  const message = location.state?.message || null;
   const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
@@ -27,6 +30,7 @@ const Login: React.FC = () => {
 
   return (
     <div>
+      {message && <p style={{ color: "red" }}>{message}</p>}
       <h1>Login</h1>
       <form onSubmit={handleLogin}>
         <div>
