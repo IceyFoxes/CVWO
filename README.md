@@ -7,47 +7,45 @@ This is a simple web forum application developed as part of CVWO's winter assign
 
 Setup Instructions
 
-    Prerequisites
+Prerequisites
 
-        Node.js (v16 or later) and npm/yarn installed
+    Node.js (v16 or later) and npm/yarn installed
 
-        Go (v1.20 or later) installed
+    Go (v1.20 or later) installed
 
-        SQLite installed or included with your system
+    SQLite installed or included with your system
 
 Backend Setup
 
-    Clone the repository
+Clone the repository
 
-        git clone <repository-url>
-        cd <repository-folder>
+    git clone <repository-url>
+    cd <repository-folder>
 
-    Navigate to the backend folder
+Navigate to the backend folder
 
-        cd backend
+    cd backend
 
-    Run the backend
+Run the backend
 
-        go run main.go
+    go run main.go
 
-    Access the backend
-    The backend will run on http://localhost:8080.
+The backend will run on http://localhost:8080.
 
 Frontend Setup
 
-    Navigate to the frontend folder
+Navigate to the frontend folder
 
-        cd frontend
+    cd frontend
 
-    Install dependencies
+Install dependencies
 
-        npm install
+    npm install
 
-    Run the frontend
+Run the frontend
 
-        npm start
+    npm start
 
-    Access the frontend
-    The frontend will be available on http://localhost:3000.
+The frontend will be available on http://localhost:3000.
 
 If you encounter any issues, feel free to contact me.
