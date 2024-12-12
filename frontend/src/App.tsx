@@ -7,6 +7,8 @@ import Register from './components/Register';
 import Login from './components/Login';
 import Navbar from './components/Navbar';
 import EditThread from './components/EditThread';
+import ThreadDetails from './components/ThreadDetails';
+
 // import ProtectedRoute from './components/ProtectedRoute';
 
 const App: React.FC = () => {
@@ -19,6 +21,7 @@ const App: React.FC = () => {
           <Route path="/create" element={<CreateThread />}/>
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/threads/:id" element={<ThreadDetails />} />
           <Route path="/threads/edit/:id" element={<EditThread />} />
         </Routes>
       </div>
