@@ -19,8 +19,7 @@ Backend Setup
 
 Clone the repository
 
-    git clone <repository-url>
-    cd <repository-folder>
+    git clone https://github.com/IceyFoxes/CVWO
 
 Navigate to the backend folder
 
