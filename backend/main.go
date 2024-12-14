@@ -122,116 +122,122 @@ func getUserIDFromUsername(db *sql.DB, username string) (int, error) {
 	return userID, nil
 }
 
-// Helper function to initialize the database and seed the necessary tables
+// Helper function for Queries with error handling
+func executeQuery(db *sql.DB, query string, successMsg string) error {
+	_, err := db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %v", err)
+	}
+	if successMsg != "" {
+		fmt.Println(successMsg)
+	}
+	return nil
+}
+
+// Helper function to seed Database with error handling
+func seedDatabase(db *sql.DB, seedQuery string, successMsg string) error {
+	_, err := db.Exec(seedQuery)
+	if err != nil {
+		return fmt.Errorf("failed to seed data: %v", err)
+	}
+	if successMsg != "" {
+		fmt.Println(successMsg)
+	}
+	return nil
+}
+
+// Helper function to initialize the database
 func initializeDatabase() (*sql.DB, error) {
-	// Connect to the SQLite database
 	db, err := sql.Open("sqlite", "./forum.db")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}
 
-	// Ping the database to check the connection
 	err = db.Ping()
 	if err != nil {
 		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 	fmt.Println("Database connected successfully!")
 
-	// Create Threads table if it doesn't exist
-	_, err = db.Exec(`
-        CREATE TABLE IF NOT EXISTS threads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            content TEXT NOT NULL,
-            user_id INTEGER NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    `)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create threads table: %v", err)
+	// Table creation queries
+	tables := map[string]string{
+		"threads": `
+            CREATE TABLE IF NOT EXISTS threads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        `,
+		"users": `
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                is_admin BOOLEAN NOT NULL DEFAULT 0
+            )
+        `,
+		"comments": `
+            CREATE TABLE IF NOT EXISTS comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                thread_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `,
+		"likes": `
+            CREATE TABLE IF NOT EXISTS likes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                thread_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE (thread_id, user_id)
+            )
+        `,
+		"dislikes": `
+            CREATE TABLE IF NOT EXISTS dislikes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                thread_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE (thread_id, user_id)
+            )
+        `,
 	}
 
-	// Create users table if it doesn't exist
-	_, err = db.Exec(`
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            is_admin BOOLEAN NOT NULL DEFAULT 0
-        );
-    `)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create users table: %v", err)
+	for name, query := range tables {
+		err = executeQuery(db, query, fmt.Sprintf("%s table created!", name))
+		if err != nil {
+			return nil, err
+		}
 	}
-	fmt.Println("Users table created with 'is_admin' flag!")
 
-	// Create Comments table if it doesn't exist
-	_, err = db.Exec(`
-        CREATE TABLE IF NOT EXISTS comments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            thread_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        );
-    `)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create comments table: %v", err)
+	// Initial seeds (admin and welcome_thread)
+	seeds := map[string]string{
+		"admin_user": `
+            INSERT OR IGNORE INTO users (id, username, is_admin) 
+            VALUES (1, 'admin_user', 1)
+        `,
+		"welcome_thread": `
+            INSERT OR IGNORE INTO threads (id, title, content, user_id)
+            VALUES (1, 'Welcome to the Forum', 'Please do not post any inappropriate content', 1)
+        `,
 	}
-	fmt.Println("Comments table created!")
 
-	// Create Likes table if it doesn't exist
-	_, err = db.Exec(`
-        CREATE TABLE IF NOT EXISTS likes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            thread_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE (thread_id, user_id)
-        );
-    `)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create likes table: %v", err)
+	for name, query := range seeds {
+		err = seedDatabase(db, query, fmt.Sprintf("%s seeded!", name))
+		if err != nil {
+			return nil, err
+		}
 	}
-	fmt.Println("Likes table created!")
-
-	// Create Dislikes table if it doesn't exist
-	_, err = db.Exec(`
-	CREATE TABLE IF NOT EXISTS dislikes (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		thread_id INTEGER NOT NULL,
-		user_id INTEGER NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
-		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-		UNIQUE (thread_id, user_id)
-	);
-	`)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create dislikes table: %v", err)
-	}
-	fmt.Println("Dislikes table created!")
-
-	// Seed a default admin user if none exists
-	_, err = db.Exec("INSERT OR IGNORE INTO users (id, username, is_admin) VALUES (1, 'admin_user', 1)")
-	if err != nil {
-		return nil, fmt.Errorf("failed to seed admin user: %v", err)
-	}
-	fmt.Println("Admin user seeded!")
-
-	// Seed a default welcome thread
-	_, err = db.Exec(`
-        INSERT OR IGNORE INTO threads (id, title, content, user_id)
-        VALUES (1, 'Welcome to the Forum', 'Please do not post any inappropriate content', 1)
-    `)
-	if err != nil {
-		return nil, fmt.Errorf("failed to seed default thread: %v", err)
-	}
-	fmt.Println("Default welcome thread seeded!")
 
 	return db, nil
 }
@@ -263,85 +269,98 @@ func main() {
 		c.JSON(200, gin.H{"message": "Server is working!"})
 	})
 
-	// Route to get threads with pagination
+	// Route for viewing threads with pagination, search and sort
 	r.GET("/threads", func(c *gin.Context) {
-		// Retrieve query parameters for search and sorting
-		searchQuery := c.DefaultQuery("search", "")      // Search query parameter
-		sortBy := c.DefaultQuery("sortBy", "created_at") // Sort by field, default is "created_at"
-		sortOrder := c.DefaultQuery("sortOrder", "asc")  // Sort order (asc or desc), default is "asc"
+		searchQuery := c.DefaultQuery("search", "")
+		sortBy := c.DefaultQuery("sortBy", "created_at") // Default sort field is `created_at`
 
-		// Validate the `sortBy` parameter
-		validSortColumns := map[string]bool{"id": true, "title": true, "content": true, "created_at": true}
-		if !validSortColumns[sortBy] {
-			sortBy = "created_at" // Default to sorting by "created_at"
+		// Map valid sort fields to their corresponding aliases
+		validSortColumns := map[string]string{
+			"created_at": "threads.created_at",
+			"likes":      "likes_count",
+			"dislikes":   "dislikes_count",
+			"comments":   "comments_count",
 		}
 
-		// Validate the `sortOrder` parameter
-		if strings.ToLower(sortOrder) != "asc" && strings.ToLower(sortOrder) != "desc" {
-			sortOrder = "asc" // Default to ascending order
+		// Validate and sanitize `sortBy`
+		sortColumn, ok := validSortColumns[sortBy]
+		if !ok {
+			sortColumn = "threads.created_at"
 		}
 
 		// Handle pagination
-		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))   // Default to page 1 if not provided
-		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "3")) // Default to 3 threads per page
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "3"))
 		if page < 1 {
 			page = 1
 		}
 		if limit < 1 {
 			limit = 3
 		}
-
-		offset := (page - 1) * limit // Calculate offset for pagination
+		offset := (page - 1) * limit
 
 		// Build the SQL query dynamically
 		query := fmt.Sprintf(`
-			SELECT id, title, content, created_at
+			SELECT 
+				threads.id, 
+				threads.title, 
+				threads.content, 
+				threads.created_at,
+				COUNT(DISTINCT likes.id) AS likes_count,
+				COUNT(DISTINCT dislikes.id) AS dislikes_count,
+				COUNT(DISTINCT comments.id) AS comments_count
 			FROM threads
-			WHERE title LIKE ? OR content LIKE ?
-			ORDER BY %s %s
+			LEFT JOIN likes ON threads.id = likes.thread_id
+			LEFT JOIN dislikes ON threads.id = dislikes.thread_id
+			LEFT JOIN comments ON threads.id = comments.thread_id
+			WHERE threads.title LIKE ? OR threads.content LIKE ?
+			GROUP BY threads.id, threads.title, threads.content, threads.created_at
+			ORDER BY %s DESC
 			LIMIT ? OFFSET ?
-		`, sortBy, sortOrder)
+		`, sortColumn)
 
-		// Execute the query with the search term
+		// Execute the query
 		rows, err := db.Query(query, "%"+searchQuery+"%", "%"+searchQuery+"%", limit, offset)
 		if err != nil {
+			log.Printf("Error executing query: %v", err)
 			c.JSON(500, gin.H{"error": "Failed to fetch threads"})
 			return
 		}
 		defer rows.Close()
 
-		// Parse results into a slice of threads
 		var threads []gin.H
 		for rows.Next() {
-			var id int
+			var id, likesCount, dislikesCount, commentsCount int
 			var title, content, createdAt string
-			if err := rows.Scan(&id, &title, &content, &createdAt); err != nil {
+			if err := rows.Scan(&id, &title, &content, &createdAt, &likesCount, &dislikesCount, &commentsCount); err != nil {
+				log.Printf("Error scanning row: %v", err)
 				c.JSON(500, gin.H{"error": "Failed to scan thread"})
 				return
 			}
 			threads = append(threads, gin.H{
-				"id":         id,
-				"title":      title,
-				"content":    content,
-				"created_at": createdAt,
+				"id":             id,
+				"title":          title,
+				"content":        content,
+				"created_at":     createdAt,
+				"likes_count":    likesCount,
+				"dislikes_count": dislikesCount,
+				"comments_count": commentsCount,
 			})
 		}
 
-		// If no threads are found, return an empty array
 		if len(threads) == 0 {
-			c.JSON(200, gin.H{"threads": []interface{}{}}) // Respond with an empty array
+			c.JSON(200, gin.H{"threads": []interface{}{}})
 			return
 		}
 
-		// Return the fetched threads
 		c.JSON(200, gin.H{
 			"threads":     threads,
 			"currentPage": page,
-			"totalPages":  calculateTotalPages(db, searchQuery, limit), // Helper function to calculate total pages
+			"totalPages":  calculateTotalPages(db, searchQuery, limit),
 		})
 	})
 
-	// Route to check edit thread authorization
+	// Route to check thread authorization
 	r.GET("/threads/:id/authorize", func(c *gin.Context) {
 		// Get username from query
 		username := c.DefaultQuery("username", "")
@@ -361,11 +380,11 @@ func main() {
 
 		// If the user is not authorized
 		if !authorized {
-			c.JSON(403, gin.H{"error": "You are not authorized to modify this thread"})
+			c.JSON(403, gin.H{"authorized": false, "error": "User is not authorized to modify this thread"})
 			return
 		}
 
-		c.JSON(200, gin.H{"message": "User is authorized to modify this thread"})
+		c.JSON(200, gin.H{"authorized": true, "message": "User is authorized to modify this thread"})
 	})
 
 	// Route to view single thread
@@ -437,9 +456,44 @@ func main() {
 		c.JSON(200, gin.H{"comments": comments})
 	})
 
+	// Route to get user's interaction state (liked/disliked)
+	r.GET("/threads/:id/interaction", func(c *gin.Context) {
+		threadID := c.Param("id")
+		username := c.Query("username")
+
+		// Validate username
+		userID, err := getUserIDFromUsername(db, username)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "Invalid username"})
+			return
+		}
+
+		// Check if user liked the thread
+		var liked bool
+		err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE thread_id = ? AND user_id = ?)", threadID, userID).Scan(&liked)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to fetch like state"})
+			return
+		}
+
+		// Check if user disliked the thread
+		var disliked bool
+		err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM dislikes WHERE thread_id = ? AND user_id = ?)", threadID, userID).Scan(&disliked)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to fetch dislike state"})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"liked":    liked,
+			"disliked": disliked,
+		})
+	})
+
 	// Route to get likes count
 	r.GET("/threads/:id/likes", func(c *gin.Context) {
 		threadID := c.Param("id")
+		username := c.Query("username")
 		var count int
 
 		err := db.QueryRow("SELECT COUNT(*) FROM likes WHERE thread_id = ?", threadID).Scan(&count)
@@ -448,18 +502,52 @@ func main() {
 			return
 		}
 
+		// Check if the current user has liked the thread
+		var hasLiked bool
+		if username != "" {
+			err = db.QueryRow(`
+				SELECT EXISTS (
+					SELECT 1 FROM likes
+					JOIN users ON likes.user_id = users.id
+					WHERE likes.thread_id = ? AND users.username = ?
+				)
+			`, threadID, username).Scan(&hasLiked)
+			if err != nil {
+				c.JSON(500, gin.H{"error": "Failed to fetch user like status"})
+				return
+			}
+		}
+
 		c.JSON(200, gin.H{"likes_count": count})
 	})
 
 	// Route to get dislikes count
 	r.GET("/threads/:id/dislikes", func(c *gin.Context) {
 		threadID := c.Param("id")
+		username := c.Query("username")
+
 		var count int
 
 		err := db.QueryRow("SELECT COUNT(*) FROM dislikes WHERE thread_id = ?", threadID).Scan(&count)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "Failed to fetch dislikes count"})
 			return
+		}
+
+		// Check if the current user has disliked the thread
+		var hasDisliked bool
+		if username != "" {
+			err = db.QueryRow(`
+				SELECT EXISTS (
+					SELECT 1 FROM dislikes
+					JOIN users ON dislikes.user_id = users.id
+					WHERE dislikes.thread_id = ? AND users.username = ?
+				)
+			`, threadID, username).Scan(&hasDisliked)
+			if err != nil {
+				c.JSON(500, gin.H{"error": "Failed to fetch user dislike status"})
+				return
+			}
 		}
 
 		c.JSON(200, gin.H{"dislikes_count": count})
@@ -540,12 +628,29 @@ func main() {
 		threadID := c.Param("id")
 		username := c.DefaultQuery("username", "")
 
+		// Validate username and get user ID
 		userID, err := getUserIDFromUsername(db, username)
 		if err != nil {
 			c.JSON(400, gin.H{"error": "Invalid username"})
 			return
 		}
 
+		// Validate if thread exists
+		var exists int
+		err = db.QueryRow("SELECT COUNT(*) FROM threads WHERE id = ?", threadID).Scan(&exists)
+		if err != nil || exists == 0 {
+			c.JSON(404, gin.H{"error": "Thread not found"})
+			return
+		}
+
+		// Remove dislike if it exists
+		_, err = db.Exec("DELETE FROM dislikes WHERE thread_id = ? AND user_id = ?", threadID, userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to remove dislike"})
+			return
+		}
+
+		// Add like
 		_, err = db.Exec("INSERT INTO likes (thread_id, user_id) VALUES (?, ?) ON CONFLICT DO NOTHING", threadID, userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "Failed to like thread"})
@@ -560,12 +665,29 @@ func main() {
 		threadID := c.Param("id")
 		username := c.DefaultQuery("username", "")
 
+		// Validate username and get user ID
 		userID, err := getUserIDFromUsername(db, username)
 		if err != nil {
 			c.JSON(400, gin.H{"error": "Invalid username"})
 			return
 		}
 
+		// Validate if thread exists
+		var exists int
+		err = db.QueryRow("SELECT COUNT(*) FROM threads WHERE id = ?", threadID).Scan(&exists)
+		if err != nil || exists == 0 {
+			c.JSON(404, gin.H{"error": "Thread not found"})
+			return
+		}
+
+		// Remove like if it exists
+		_, err = db.Exec("DELETE FROM likes WHERE thread_id = ? AND user_id = ?", threadID, userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to remove like"})
+			return
+		}
+
+		// Add dislike
 		_, err = db.Exec("INSERT INTO dislikes (thread_id, user_id) VALUES (?, ?) ON CONFLICT DO NOTHING", threadID, userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "Failed to dislike thread"})

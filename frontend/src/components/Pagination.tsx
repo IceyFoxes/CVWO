@@ -3,18 +3,16 @@ import React from "react";
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
-  fetchThreads: (searchQuery: string, pageNumber: number, sortOrder: string) => void;
-  searchQuery: string;
-  sortOrder: string;
-  setPage: React.Dispatch<React.SetStateAction<number>>;
+  setPage: (page: number) => void;
+  fetchThreads?: (page: number) => void;
 }
 
-const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, fetchThreads, searchQuery, sortOrder, setPage }) => {
+const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, setPage, fetchThreads }) => {
   const nextPage = () => {
     if (currentPage < totalPages) {
       const nextPage = currentPage + 1;
       setPage(nextPage);
-      fetchThreads(searchQuery, nextPage, sortOrder);
+      fetchThreads?.(nextPage); // Optional chaining to call fetchThreads if provided
     }
   };
 
@@ -22,7 +20,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, fetchT
     if (currentPage > 1) {
       const prevPage = currentPage - 1;
       setPage(prevPage);
-      fetchThreads(searchQuery, prevPage, sortOrder);
+      fetchThreads?.(prevPage); // Optional chaining to call fetchThreads if provided
     }
   };
 

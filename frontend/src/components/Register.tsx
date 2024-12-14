@@ -29,7 +29,7 @@ const Register: React.FC = () => {
       <h1>Register</h1>
       <form onSubmit={handleRegister}>
         <div>
-          <label>Username:</label>
+          <label htmlFor="username">Username:</label>
           <input
             type="text"
             value={username}

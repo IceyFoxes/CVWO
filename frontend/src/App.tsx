@@ -9,8 +9,6 @@ import Navbar from './components/Navbar';
 import EditThread from './components/EditThread';
 import ThreadDetails from './components/ThreadDetails';
 
-// import ProtectedRoute from './components/ProtectedRoute';
-
 const App: React.FC = () => {
   return (
     <Router>

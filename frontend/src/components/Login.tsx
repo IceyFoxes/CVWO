@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState<string>('');
@@ -14,7 +13,7 @@ const Login: React.FC = () => {
     e.preventDefault();
 
     axios.post('http://localhost:8080/login', { username })
-      .then((response) => {
+      .then(() => {
         alert('Login successful!');
         localStorage.setItem('username', username); // Store username for future use
         navigate('/'); // Redirect to the home page after login
@@ -34,7 +33,7 @@ const Login: React.FC = () => {
       <h1>Login</h1>
       <form onSubmit={handleLogin}>
         <div>
-          <label>Username:</label>
+          <label htmlFor="username">Username:</label>
           <input
             type="text"
             value={username}

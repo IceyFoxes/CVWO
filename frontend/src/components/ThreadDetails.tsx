@@ -25,8 +25,8 @@ const ThreadDetails: React.FC = () => {
       <small> 
         Posted on: <Timestamp date={thread.created_at} />
       </small>
-      <LikesDislikes threadId={parseInt(id || "0", 10)} />
-      <Comments threadId={parseInt(id || "0", 10)} />
+      <LikesDislikes threadId={parseInt(id ?? "0", 10)} />
+      <Comments threadId={parseInt(id ?? "0", 10)} />
     </div>
   );
 };

@@ -3,26 +3,26 @@ import React from "react";
 interface SearchProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  fetchThreads: (search: string, page: number, sort: string) => void;
-  sortOrder: string;
 }
 
-const Search: React.FC<SearchProps> = ({ searchQuery, setSearchQuery, fetchThreads, sortOrder }) => {
-  const handleSearch = () => {
-    fetchThreads(searchQuery, 1, sortOrder);
+const Search: React.FC<SearchProps> = ({ searchQuery, setSearchQuery }) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value); // Updates the search query in the parent state
   };
 
   return (
     <div>
+      <label htmlFor="searchInput">Search:</label>
       <input
+        id="searchInput"
         type="text"
         placeholder="Search threads"
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={handleInputChange}
       />
-      <button onClick={handleSearch}>Search</button>
     </div>
   );
 };
 
 export default Search;
+

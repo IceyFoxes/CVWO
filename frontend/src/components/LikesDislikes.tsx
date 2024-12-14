@@ -8,21 +8,35 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
   const [disliked, setDisliked] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const username = localStorage.getItem("username");
+
   useEffect(() => {
     // Fetch likes and dislikes count
     axios
       .get(`http://localhost:8080/threads/${threadId}/likes`)
       .then((response) => setLikesCount(response.data.likes_count || 0))
-      .catch((error) => setError("Failed to fetch likes count"));
+      .catch(() => setError("Failed to fetch likes count"));
 
     axios
       .get(`http://localhost:8080/threads/${threadId}/dislikes`)
       .then((response) => setDislikesCount(response.data.dislikes_count || 0))
-      .catch((error) => setError("Failed to fetch dislikes count"));
-  }, [threadId]);
+      .catch(() => setError("Failed to fetch dislikes count"));
+
+    // Fetch user's interaction state
+    if (username) {
+      axios
+        .get(`http://localhost:8080/threads/${threadId}/interaction`, {
+          params: { username },
+        })
+        .then((response) => {
+          setLiked(response.data.liked || false);
+          setDisliked(response.data.disliked || false);
+        })
+        .catch(() => setError("Failed to fetch interaction state"));
+    }
+  }, [threadId, username]);
 
   const toggleLike = () => {
-    const username = localStorage.getItem("username");
     if (!username) {
       alert("You must be logged in to like a thread.");
       return;
@@ -30,7 +44,9 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
 
     if (liked) {
       axios
-        .delete(`http://localhost:8080/threads/${threadId}/like?username=${username}`)
+        .delete(`http://localhost:8080/threads/${threadId}/like`, {
+          params: { username },
+        })
         .then(() => {
           setLiked(false);
           setLikesCount((prev) => prev - 1);
@@ -38,10 +54,12 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
         .catch(() => setError("Failed to remove like"));
     } else {
       axios
-        .post(`http://localhost:8080/threads/${threadId}/like?username=${username}`)
+        .post(`http://localhost:8080/threads/${threadId}/like`, null, {
+          params: { username },
+        })
         .then(() => {
           setLiked(true);
-          setDisliked(false);
+          setDisliked(false); // Remove dislike if it exists
           setLikesCount((prev) => prev + 1);
           setDislikesCount((prev) => (disliked ? prev - 1 : prev));
         })
@@ -50,7 +68,6 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
   };
 
   const toggleDislike = () => {
-    const username = localStorage.getItem("username");
     if (!username) {
       alert("You must be logged in to dislike a thread.");
       return;
@@ -58,7 +75,9 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
 
     if (disliked) {
       axios
-        .delete(`http://localhost:8080/threads/${threadId}/dislike?username=${username}`)
+        .delete(`http://localhost:8080/threads/${threadId}/dislike`, {
+          params: { username },
+        })
         .then(() => {
           setDisliked(false);
           setDislikesCount((prev) => prev - 1);
@@ -66,10 +85,12 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
         .catch(() => setError("Failed to remove dislike"));
     } else {
       axios
-        .post(`http://localhost:8080/threads/${threadId}/dislike?username=${username}`)
+        .post(`http://localhost:8080/threads/${threadId}/dislike`, null, {
+          params: { username },
+        })
         .then(() => {
           setDisliked(true);
-          setLiked(false);
+          setLiked(false); // Remove like if it exists
           setDislikesCount((prev) => prev + 1);
           setLikesCount((prev) => (liked ? prev - 1 : prev));
         })
