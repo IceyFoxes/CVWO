@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "../axiosConfig";
 
 const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
   const [likesCount, setLikesCount] = useState<number>(0);
@@ -8,24 +8,24 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
   const [disliked, setDisliked] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const username = localStorage.getItem("username");
+  const username = sessionStorage.getItem("username");
 
   useEffect(() => {
     // Fetch likes and dislikes count
-    axios
-      .get(`http://localhost:8080/threads/${threadId}/likes`)
+    axiosInstance
+      .get(`/threads/${threadId}/likes`)
       .then((response) => setLikesCount(response.data.likes_count || 0))
       .catch(() => setError("Failed to fetch likes count"));
 
-    axios
-      .get(`http://localhost:8080/threads/${threadId}/dislikes`)
+    axiosInstance
+      .get(`/threads/${threadId}/dislikes`)
       .then((response) => setDislikesCount(response.data.dislikes_count || 0))
       .catch(() => setError("Failed to fetch dislikes count"));
 
     // Fetch user's interaction state
     if (username) {
-      axios
-        .get(`http://localhost:8080/threads/${threadId}/interaction`, {
+      axiosInstance
+        .get(`/threads/${threadId}/interaction`, {
           params: { username },
         })
         .then((response) => {
@@ -43,8 +43,8 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
     }
 
     if (liked) {
-      axios
-        .delete(`http://localhost:8080/threads/${threadId}/like`, {
+      axiosInstance
+        .delete(`/threads/${threadId}/like`, {
           params: { username },
         })
         .then(() => {
@@ -53,8 +53,8 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
         })
         .catch(() => setError("Failed to remove like"));
     } else {
-      axios
-        .post(`http://localhost:8080/threads/${threadId}/like`, null, {
+      axiosInstance
+        .post(`/threads/${threadId}/like`, null, {
           params: { username },
         })
         .then(() => {
@@ -74,8 +74,8 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
     }
 
     if (disliked) {
-      axios
-        .delete(`http://localhost:8080/threads/${threadId}/dislike`, {
+      axiosInstance
+        .delete(`/threads/${threadId}/dislike`, {
           params: { username },
         })
         .then(() => {
@@ -84,8 +84,8 @@ const LikesDislikes: React.FC<{ threadId: number }> = ({ threadId }) => {
         })
         .catch(() => setError("Failed to remove dislike"));
     } else {
-      axios
-        .post(`http://localhost:8080/threads/${threadId}/dislike`, null, {
+      axiosInstance
+        .post(`/threads/${threadId}/dislike`, null, {
           params: { username },
         })
         .then(() => {

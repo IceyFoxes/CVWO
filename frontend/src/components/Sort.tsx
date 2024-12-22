@@ -3,9 +3,17 @@ import React from "react";
 interface SortProps {
   sortBy: string;
   setSortBy: (field: string) => void;
+  excludedOptions?: string[]; // List of options to exclude
 }
 
-const Sort: React.FC<SortProps> = ({ sortBy, setSortBy }) => {
+const Sort: React.FC<SortProps> = ({ sortBy, setSortBy, excludedOptions = [] }) => {
+  const options = [
+    { value: "created_at", label: "Most Recent" },
+    { value: "likes", label: "Most Liked" },
+    { value: "dislikes", label: "Most Disliked" },
+    { value: "comments", label: "Most Commented" },
+  ];
+
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSortBy = e.target.value;
     setSortBy(newSortBy); // Update the state in parent, triggering the fetch there
@@ -20,10 +28,13 @@ const Sort: React.FC<SortProps> = ({ sortBy, setSortBy }) => {
         value={sortBy}
         style={{ marginLeft: "8px" }}
       >
-        <option value="created_at">Most Recent</option>
-        <option value="likes">Most Liked</option>
-        <option value="dislikes">Most Disliked</option>
-        <option value="comments">Most Commented</option>
+        {options
+          .filter(option => !excludedOptions.includes(option.value)) // Exclude unwanted options
+          .map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
       </select>
     </div>
   );

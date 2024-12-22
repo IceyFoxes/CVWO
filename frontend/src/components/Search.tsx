@@ -16,7 +16,7 @@ const Search: React.FC<SearchProps> = ({ searchQuery, setSearchQuery }) => {
       <input
         id="searchInput"
         type="text"
-        placeholder="Search threads"
+        placeholder="Search"
         value={searchQuery}
         onChange={handleInputChange}
       />

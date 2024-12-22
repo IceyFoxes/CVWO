@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from "../axiosConfig";
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Login: React.FC = () => {
@@ -12,10 +12,10 @@ const Login: React.FC = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
-    axios.post('http://localhost:8080/login', { username })
-      .then(() => {
-        alert('Login successful!');
-        localStorage.setItem('username', username); // Store username for future use
+    axiosInstance.post('/users/login', { username })
+      .then((response) => {
+        sessionStorage.setItem('username', username); 
+        sessionStorage.setItem("jwtToken", response.data.token);
         navigate('/'); // Redirect to the home page after login
       })
       .catch((error) => {

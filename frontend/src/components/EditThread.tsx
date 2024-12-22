@@ -1,110 +1,93 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../axiosConfig";
 
 const EditThread: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
+    const [title, setTitle] = useState<string>("");
+    const [content, setContent] = useState<string>("");
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
 
-  const username = localStorage.getItem("username");
+    useEffect(() => {
+        const fetchDetails = async () => {
+            try {
+                const response = await axiosInstance.get(`/threads/${id}`);
+                setTitle(response.data.thread?.title || null); // Null for comments
+                setContent(response.data.thread.content || "");
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching details:", error);
+                setError("Failed to load details.");
+                setLoading(false);
+            }
+        };
 
-  const fetchAuthorization = async () => {
-    try {
-      const response = await axios.get(`http://localhost:8080/threads/${id}/authorize?username=${username}`);
-      if (!response.data.authorized) {
-        navigate(`/threads/${id}`, { state: { error: "Unauthorized access!" } });
-      }
-    } catch {
-      setError("Failed to verify authorization.");
-    }
-  };
-  useEffect(() => {
-    if (username) fetchAuthorization();
-  }, [id, username, navigate]);
+        fetchDetails();
+    }, [id]);
 
-  
-  useEffect(() => {
-    const fetchThread = async () => {
-      try {
-        const response = await axios.get(`http://localhost:8080/threads/${id}`);
-        setTitle(response.data.title);
-        setContent(response.data.content);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch thread:", err);
-        setError("Failed to fetch thread details.");
-      }
-    };
+    const username = sessionStorage.getItem("username");
 
-    if (username) {
-      fetchThread();
-    } else {
-      navigate("/login", { state: { message: "You must be logged in!" } });
-    }
-  }, [id, username, navigate]);
+    const handleSubmit = async () => {
+        // Validate content and title
+        if (title === null && !content.trim()) {
+            alert("Content cannot be empty.");
+            return;
+        }
+    
+        if (title !== null && (!title.trim() || !content.trim())) {
+            alert("Title and content cannot be empty.");
+            return;
+        }
+    
+        try {
+            await axiosInstance.put(`/threads/${id}`,
+                {
+                    title: title || undefined, // Include title only for threads
+                    content,
+                },
+                {
+                    params: { username }, // Attach username as a query parameter
+                }
+            );
+            alert("Successfully updated!");
+            navigate(`/threads/${id}`); // Redirect to thread details after update
+        } catch (error) {
+            console.error("Failed to update:", error);
+        }
+    };    
+    
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-  
-    try {
-      const response = await axios.put(
-        `http://localhost:8080/threads/${id}?username=${username}`,
-        { title, content }
-      );
-      alert(response.data.message); // Success message
-      navigate(`/threads/${id}`); 
-    } catch (err: any) {
-      if (err.response?.data?.errors) {
-        // If the backend sends a validation error array
-        setError(err.response.data.errors.join(", "));
-      } else if (err.response?.data?.error) {
-        // If the backend sends a single error message
-        setError(err.response.data.error);
-      } else {
-        setError("Failed to edit thread.");
-      }
-    }
-  };
-  
-  if (error) {
-    return <p style={{ color: "red" }}>{error}</p>;
-  }
-  
+    if (loading) return <p>Loading...</p>;
+    if (error) return <p style={{ color: "red" }}>{error}</p>;
 
-  if (error) {
-    return <p style={{ color: "red" }}>{error}</p>;
-  }
-
-  return (
-    <div>
-      <h1>Edit Thread</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="title">Title:</label>
-          <input
-            id="title"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="content">Content:</label>
-          <textarea
-            id="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Save Changes</button>
-      </form>
-    </div>
-  );  
+    return (
+        <form onSubmit={(e) => e.preventDefault()}>
+            {title !== null && ( // Show title input only for threads
+                <div>
+                    <label htmlFor="title">Title: </label>
+                    <br />
+                    <input
+                        type="text"
+                        id="title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                    />
+                </div>
+            )}
+            <div>
+                <label htmlFor="content">Content: </label>
+                <br />
+                <textarea
+                    id="content"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                />
+            </div>
+            <button onClick={handleSubmit}>Save</button>
+        </form>
+    );
 };
 
 export default EditThread;

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 const Navbar: React.FC = () => {
-  const username = localStorage.getItem("username");
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();  // Get the thread ID from the URL
+  const { id } = useParams<{ id: string }>();  
   const [currentThreadId, setCurrentThreadId] = useState<number | null>(null);
+  const username = sessionStorage.getItem("username");
 
   // Use effect to set the current thread ID (could be useful in other cases too)
   useEffect(() => {
@@ -15,7 +15,8 @@ const Navbar: React.FC = () => {
   }, [id]);  // Re-run if the ID changes
 
   const handleLogout = () => {
-    localStorage.removeItem("username");
+    sessionStorage.removeItem("username");
+    sessionStorage.removeItem("jwtToken");
     alert("You have been logged out.");
     navigate("/login");
   };

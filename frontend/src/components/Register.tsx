@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from "../axiosConfig";
 import { useNavigate } from 'react-router-dom';
 
 const Register: React.FC = () => {
@@ -10,8 +10,8 @@ const Register: React.FC = () => {
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
 
-    axios.post('http://localhost:8080/users', { username })
-      .then((response) => {
+    axiosInstance.post('/users', { username })
+      .then(() => {
         alert('Registration successful!');
         navigate('/login'); // Redirect to login page after successful registration
       })

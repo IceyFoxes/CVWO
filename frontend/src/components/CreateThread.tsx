@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from "../axiosConfig";
 import { useNavigate } from 'react-router-dom';
 
 const CreateThread: React.FC = () => {
@@ -7,17 +7,16 @@ const CreateThread: React.FC = () => {
   const [content, setContent] = useState<string>('');
   const navigate = useNavigate();
 
-  // Get the logged-in username from localStorage
-  const username = localStorage.getItem('username');
+  const username = sessionStorage.getItem('username');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Send the request to create a new thread
-    axios.post(`http://localhost:8080/threads?username=${username}`, { title, content })
-      .then((response) => {
+    axiosInstance.post(`/threads?username=${username}`, { title, content })
+      .then(() => {
         alert('Thread created successfully!');
-        navigate('/'); // Redirect to the thread list
+        navigate('/');
       })
       .catch((error) => {
         if (error.response) {
@@ -34,7 +33,7 @@ const CreateThread: React.FC = () => {
       <h1>Create a New Thread</h1>
       <form onSubmit={handleSubmit}>
         <div>
-          <label>Title:</label>
+          <label htmlFor="title">Title:</label>
           <input
             type="text"
             value={title}
@@ -43,7 +42,7 @@ const CreateThread: React.FC = () => {
           />
         </div>
         <div>
-          <label>Content:</label>
+          <label htmlFor="content">Content:</label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}

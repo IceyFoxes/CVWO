@@ -1,13 +1,14 @@
 import React from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "../axiosConfig";
 
 export interface DeleteThreadProps {
   threadId: number;
-  onThreadDeleted: () => void;
-  authorized?: boolean; // Add the disabled prop
+  authorized?: boolean;
 }
 
-const DeleteThread: React.FC<DeleteThreadProps> = ({ threadId, onThreadDeleted, authorized = false }) => {
+const DeleteThread: React.FC<DeleteThreadProps> = ({ threadId, authorized = false }) => {
+  const navigate = useNavigate();
   const handleDelete = async () => {
     const username = localStorage.getItem("username");
     if (!username) {
@@ -19,17 +20,23 @@ const DeleteThread: React.FC<DeleteThreadProps> = ({ threadId, onThreadDeleted, 
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`http://localhost:8080/threads/${threadId}?username=${username}`);
-      alert("Thread deleted successfully.");
-      onThreadDeleted();
+      const threadResponse = await axiosInstance.get(`/threads/${threadId}`);
+      await axiosInstance.delete(`/threads/${threadId}?username=${username}`);
+
+      const { parent_id } = threadResponse.data.thread;
+      if (parent_id) {
+        navigate(`/threads/${parent_id}`);
+      } else {
+        navigate('/');
+      }
     } catch (error) {
-      console.error("Failed to delete thread:", error);
-      alert("Failed to delete the thread.");
+      console.error("Error during delete operation:", error);
+      alert("Failed to delete the thread. Please try again.");
     }
   };
 
-  // If the user is not authorized, do not render the button
   if (!authorized) {
+    console.log("Not authorized to delete."); 
     return null;
   }
 

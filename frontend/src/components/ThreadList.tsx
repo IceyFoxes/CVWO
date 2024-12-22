@@ -1,144 +1,122 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { fetchThreads, fetchAuthorization, Thread } from "./FetchThreads";
-import DeleteThread from "./DeleteThread";
+import axiosInstance from "../axiosConfig";
 import Search from "./Search";
 import Sort from "./Sort";
 import Pagination from "./Pagination";
-import Timestamp from "./Timestamp";
+
+export interface Thread {
+    id: number;
+    author: string;
+    title: string;
+    content: string;
+    created_at: string;
+    likes_count: number;
+    dislikes_count: number;
+    comments_count: number;
+}
 
 const ThreadList: React.FC = () => {
-  const navigate = useNavigate();
-  const [threads, setThreads] = useState<Thread[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
-  const [sortBy, setSortBy] = useState("created_at");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [authStatus, setAuthStatus] = useState<{ [key: number]: boolean }>({});
+    const navigate = useNavigate();
+    const [threads, setThreads] = useState<Thread[]>([]);
+    const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
+    const [sortBy, setSortBy] = useState("created_at");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
-  const username = localStorage.getItem("username");
+    const fetchAndSetThreads = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await axiosInstance.get("/threads", {
+                params: {
+                    search: searchQuery,
+                    page: pagination.page,
+                    limit: 10,
+                    sortBy,
+                },
+            });
+            const { threads = [], totalPages = 1 } = response.data;
+            setThreads(threads);
+            setPagination((prev) => ({ ...prev, totalPages }));
+            setError(null);
+        } catch (err) {
+            console.error("Failed to fetch threads:", err);
+            setError("Failed to fetch threads. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    }, [searchQuery, pagination.page, sortBy]);
 
-  // Fetch threads and handle pagination, sorting, and search
-  const fetchAndSetThreads = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { threads, totalPages } = await fetchThreads({
-        searchQuery,
-        page: pagination.page,
-        sortBy,
-      });
-      setThreads(threads);
-      setPagination((prev) =>
-        prev.totalPages !== totalPages ? { ...prev, totalPages } : prev
-      );
-      setError(null);
+    useEffect(() => {
+        const token = sessionStorage.getItem("jwtToken");
+        if (!token) {
+            navigate("/login", { state: { message: "You must be logged in!" } });
+        } else {
+            fetchAndSetThreads();
+        }
+    }, [fetchAndSetThreads]);
 
-      // Fetch authorization for all threads after fetching
-      if (username) {
-        const authMap: { [key: number]: boolean } = {};
-        await Promise.all(
-          threads.map(async (thread: Thread) => {
-            const authorized = await fetchAuthorization(thread.id, username);
-            authMap[thread.id] = authorized;
-          })
-        );
-        setAuthStatus(authMap);
-      }
-    } catch (err) {
-      setError("Failed to fetch threads.");
-      setThreads([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, pagination.page, sortBy, username]);
+    return (
+        <div>
+            <h1>Threads</h1>
 
-  // Initial fetch and watch for relevant state changes
-  useEffect(() => {
-    if (!username) {
-      navigate("/login", { state: { message: "You must be logged in!" } });
-    } else {
-      fetchAndSetThreads();
-    }
-  }, [username, fetchAndSetThreads, navigate]);
+            <Search
+                searchQuery={searchQuery}
+                setSearchQuery={(query) => {
+                    setSearchQuery(query);
+                    setPagination({ ...pagination, page: 1 });
+                }}
+            />
 
-  const handleThreadDeleted = (threadId: number) => {
-    setThreads((prevThreads) => prevThreads.filter((thread) => thread.id !== threadId));
-  };
+            <Sort
+                sortBy={sortBy}
+                setSortBy={(newSortBy) => {
+                    setSortBy(newSortBy);
+                    setPagination({ ...pagination, page: 1 });
+                }}
+            />
 
-  return (
-    <div>
-      <h1>Threads</h1>
+            {error && (
+                <div style={{ color: "red" }}>
+                    <p>{error}</p>
+                    <button onClick={fetchAndSetThreads}>Retry</button>
+                </div>
+            )}
 
-      {/* Search Component */}
-      <Search
-        searchQuery={searchQuery}
-        setSearchQuery={(query) => {
-          setSearchQuery(query);
-          setPagination((prev) => ({ ...prev, page: 1 })); // Reset pagination to page 1
-        }}
-      />
+            {loading ? (
+                <div className="loading-spinner" aria-busy="true" aria-live="polite">
+                    <p>Loading...</p>
+                </div>
+            ) : (
+                <ul>
+                    {threads.map((thread) => (
+                        <li key={thread.id} style={{ marginBottom: "1em" }}>
+                            <h3>{thread.title}</h3>
+                            <p>{thread.content.substring(0, 100)}...</p>
+                            <small>
+                                By: {thread.author} | Likes: {thread.likes_count} | Dislikes: {thread.dislikes_count} | Comments: {thread.comments_count}
+                            </small>
+                            <br />
+                            <small>Posted on: {new Date(thread.created_at).toLocaleString()}</small>
+                            <br />
+                            <Link to={`/threads/${thread.id}`}>View Details</Link>
+                        </li>
+                    ))}
+                </ul>
+            )}
 
-      {/* Sort Component */}
-      <Sort
-        sortBy={sortBy}
-        setSortBy={(newSortBy) => {
-          setSortBy(newSortBy);
-          setPagination({ page: 1, totalPages: pagination.totalPages });
-        }}
-      />
+            <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                setPage={(page) => setPagination({ ...pagination, page })}
+            />
 
-      {/* Error Messages */}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {/* Thread List */}
-      {loading ? (
-        <p>Loading threads...</p>
-      ) : (
-        <ul>
-          {threads.map((thread) => (
-            <li key={thread.id}>
-              <h3>{thread.title}</h3>
-              <p>{thread.content.substring(0, 100)}...</p>
-              <small>
-                Posted on: <Timestamp date={thread.created_at} />
-              </small>
-              <br />
-              {/* Thread Details Component */}
-              <Link to={`/threads/${thread.id}`}>View Details</Link>
-              <div>
-                {authStatus[thread.id] && (
-                  <>
-                    {/* Edit Component */}
-                    <button
-                      onClick={() => navigate(`/threads/edit/${thread.id}`)}
-                      style={{ color: "blue" }}
-                    >
-                      Edit
-                    </button>
-                    {/* Delete Component */}
-                    <DeleteThread
-                      threadId={thread.id}
-                      onThreadDeleted={() => handleThreadDeleted(thread.id)}
-                    />
-                  </>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Pagination Component */}
-      <Pagination
-        currentPage={pagination.page}
-        totalPages={pagination.totalPages}
-        setPage={(page: number) => setPagination({ ...pagination, page })}
-      />
-
-      <Link to="/create">Create New Thread</Link>
-    </div>
-  );
+            <Link to="/create" style={{ display: "block", marginTop: "1em", textDecoration: "none" }}>
+                Create New Thread
+            </Link>
+        </div>
+    );
 };
 
 export default ThreadList;
