@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import axiosInstance from "../axiosConfig";
 import CommentList from "./CommentList";
 import Search from "./Search";
 import Sort from "./Sort";
+import { postComment } from "../services/threadService";
 
 interface CommentSectionProps {
     threadId: number;
@@ -22,25 +22,21 @@ const CommentSection: React.FC<CommentSectionProps> = ({ threadId, username }) =
             alert("You must be logged in to comment.");
             return;
         }
-
+    
         if (!commentContent.trim()) {
             alert("Comment content cannot be empty.");
             return;
         }
-
+    
         try {
-            await axiosInstance.post(
-                `/threads/${threadId}/comment`,
-                { content: commentContent },
-                { params: { username } }
-            );
+            await postComment(threadId, username, commentContent); // Call the service function
             alert("Comment added successfully.");
             setCommentContent(""); // Clear the comment field
             setShowCommentBox(false); // Hide the comment box
             setRefreshFlag(!refreshFlag); // Trigger refresh
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to add comment:", error);
-            setError("Failed to add comment. Please try again.");
+            setError(error.response?.data?.error || "Failed to add comment. Please try again.");
         }
     };
 

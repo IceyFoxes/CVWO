@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import axiosInstance from "../axiosConfig";
+import { getThreadById } from "../services/threadService";
 
 interface Comment {
     id: number;
@@ -80,20 +80,19 @@ const CommentList: React.FC<{ threadId: number; refreshFlag: boolean; searchQuer
     useEffect(() => {
         const fetchComments = async () => {
             try {
-                const response = await axiosInstance.get(`/threads/${threadId}`, {
-                    params: { query: searchQuery, sortBy },
-                });
-                const { comments } = response.data;
+                const data = await getThreadById(threadId.toString(), { query: searchQuery, sortBy }); // Pass extra params
+                const { comments } = data;
+        
                 if (Array.isArray(comments)) {
-                    setComments(comments);
+                    setComments(comments); // Update state with comments
                 } else {
                     throw new Error("Invalid response format");
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to fetch comments:", error);
-                setError("Failed to load comments. Please try again.");
+                setError(error.response?.data?.error || "Failed to load comments. Please try again.");
             }
-        };
+        };        
         fetchComments();
     }, [threadId, refreshFlag, searchQuery, sortBy]);
 

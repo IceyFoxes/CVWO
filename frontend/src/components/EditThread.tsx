@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axiosInstance from "../axiosConfig";
+import { editThread, getThreadById } from "../services/threadService";
 
 const EditThread: React.FC = () => {
     const navigate = useNavigate();
@@ -13,9 +13,14 @@ const EditThread: React.FC = () => {
     useEffect(() => {
         const fetchDetails = async () => {
             try {
-                const response = await axiosInstance.get(`/threads/${id}`);
-                setTitle(response.data.thread?.title || null); // Null for comments
-                setContent(response.data.thread.content || "");
+                if (!id) {
+                    console.error("Thread ID is undefined. Redirecting to ThreadList.");
+                    navigate("/threads");
+                    return null;
+                }
+                const data = await getThreadById(id);
+                setTitle(data.thread?.title || null); // Null for comments
+                setContent(data.thread.content || "");
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching details:", error);
@@ -42,15 +47,17 @@ const EditThread: React.FC = () => {
         }
     
         try {
-            await axiosInstance.put(`/threads/${id}`,
-                {
-                    title: title || undefined, // Include title only for threads
-                    content,
-                },
-                {
-                    params: { username }, // Attach username as a query parameter
-                }
-            );
+            if (!id) {
+                console.error("Thread ID is undefined. Redirecting to ThreadList.");
+                navigate("/threads");
+                return null;
+            }
+            if (!username) {
+                console.error("Username is undefined. Redirecting to Login.");
+                navigate("/login");
+                return null;
+            }
+            await editThread(id, username, title, content);
             alert("Successfully updated!");
             navigate(`/threads/${id}`); // Redirect to thread details after update
         } catch (error) {

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../axiosConfig";
+import { deleteThread, getThreadById } from "../services/threadService";
 
 export interface DeleteThreadProps {
   threadId: number;
@@ -20,10 +20,11 @@ const DeleteThread: React.FC<DeleteThreadProps> = ({ threadId, authorized = fals
     if (!confirmDelete) return;
 
     try {
-      const threadResponse = await axiosInstance.get(`/threads/${threadId}`);
-      await axiosInstance.delete(`/threads/${threadId}?username=${username}`);
 
-      const { parent_id } = threadResponse.data.thread;
+      const data = await getThreadById(threadId.toString());
+      await deleteThread(threadId.toString(), username)
+
+      const { parent_id } = data.thread;
       if (parent_id) {
         navigate(`/threads/${parent_id}`);
       } else {

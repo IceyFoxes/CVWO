@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axiosInstance from "../axiosConfig";
 import { useNavigate } from 'react-router-dom';
+import { createThread } from '../services/threadService';
 
 const CreateThread: React.FC = () => {
   const [title, setTitle] = useState<string>('');
@@ -9,24 +9,26 @@ const CreateThread: React.FC = () => {
 
   const username = sessionStorage.getItem('username');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Send the request to create a new thread
-    axiosInstance.post(`/threads?username=${username}`, { title, content })
-      .then(() => {
-        alert('Thread created successfully!');
-        navigate('/');
-      })
-      .catch((error) => {
-        if (error.response) {
-          const errors = error.response.data.errors || [error.response.data.error];
-          alert(errors.join('\n')); // Show backend validation errors
-        } else {
-          alert('An unexpected error occurred. Please try again.');
+    try {
+        if (!username) {
+          console.error("Username is undefined. Redirecting to Login.");
+          navigate("/login");
+          return null;
         }
-      });
-  };
+        await createThread(username, title, content);
+        alert("Thread created successfully!");
+        navigate("/");
+    } catch (error: any) {
+        if (error.response) {
+            const errors = error.response.data.errors || [error.response.data.error];
+            alert(errors.join("\n"));
+        } else {
+            alert("An unexpected error occurred. Please try again.");
+        }
+    }
+};
 
   return (
     <div>
