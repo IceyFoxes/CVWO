@@ -39,11 +39,11 @@ Navigate to the frontend folder
 
 Install dependencies
 
-    npm install
+    yarn install
 
 Run the frontend
 
-    npm start
+    yarn start
 
 The frontend will be available on http://localhost:3000.
 
