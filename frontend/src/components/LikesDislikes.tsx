@@ -66,6 +66,10 @@ const LikesDislikes: React.FC<{ threadId: string }> = ({ threadId }) => {
     };
 
     const handleDislikeToggle = async () => {
+        if (!username) {
+            showAlert("You must be logged in to dislike a thread.", "error");
+            return;
+        }
         try {
             if (disliked) {
                 await removeDislike(threadId, username ?? "");
@@ -84,13 +88,12 @@ const LikesDislikes: React.FC<{ threadId: string }> = ({ threadId }) => {
             }
         } catch (err) {
             console.error("Error toggling dislike:", err);
-            setError("Failed to toggle dislike. Please try again.");
         }
     };
 
     useEffect(() => {
         fetchInteractionData();
-    }, [threadId, fetchInteractionData]);
+    }, [threadId]);
 
     return (
         <div>
