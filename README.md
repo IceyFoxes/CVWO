@@ -5,6 +5,8 @@ Description
 
 This is a simple web forum application developed as part of CVWO's winter assignment. The application uses a React frontend and a Go (Gin) backend with SQLite as the database.
 
+Deployed here: https://cvwo2025.netlify.app/
+
 Setup Instructions
 
 Prerequisites
