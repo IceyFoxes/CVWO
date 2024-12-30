@@ -2,7 +2,7 @@ import React from "react";
 import { Paper, Typography} from "@mui/material";
 import Grid from "@mui/material/Grid2";
 
-interface UserScores {
+export interface Scores {
   userID: number;
   username: string;
   threadsScore: number;
@@ -11,7 +11,7 @@ interface UserScores {
 }
 
 interface UserScoresProps {
-  scores: UserScores;
+  scores: Scores;
 }
 
 const UserScores: React.FC<UserScoresProps> = ({ scores }) => {

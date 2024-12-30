@@ -2,7 +2,7 @@ import React from "react";
 import { Typography, Paper } from "@mui/material";
 import Grid from '@mui/material/Grid2';
 
-interface UserMetrics {
+export interface Metrics {
   threadsCreated: number;
   commentsMade: number;
   likesReceived: number;
@@ -10,7 +10,7 @@ interface UserMetrics {
 }
 
 interface UserMetricsProps {
-  metrics: UserMetrics;
+  metrics: Metrics;
 }
 
 const UserMetrics: React.FC<UserMetricsProps> = ({ metrics }) => {

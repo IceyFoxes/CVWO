@@ -41,7 +41,7 @@ const Sidebar: React.FC = () => {
         };
 
         fetchData();
-    }, [refreshFlag]);
+    }, [username, refreshFlag]);
 
     return (
         <Box sx={sidebarContainer}>

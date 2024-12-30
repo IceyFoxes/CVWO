@@ -27,7 +27,7 @@ const SaveUnsave: React.FC<SaveUnsaveProps> = ({ threadId }) => {
             }
         };
         fetchSaveStatus();
-    }, [threadId]);
+    }, [threadId, username]);
 
     const toggleSave = async () => {
         try {

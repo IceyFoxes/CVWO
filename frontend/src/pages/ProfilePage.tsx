@@ -4,9 +4,9 @@ import UpdateUserBio from "../components/UpdateUserBio"; // New Component for Ed
 import { getAuthorization, getUserInfo, getUserMetrics, getUserScores, updatePassword } from "../services/userService";
 import { useParams } from "react-router-dom";
 import { Box } from "@mui/material";
-import UserMetrics from "../components/UserMetrics";
+import UserMetrics, { Metrics } from "../components/UserMetrics";
 import Loader from "../components/shared/Loader";
-import UserScores from "../components/UserScores";
+import UserScores, { Scores } from "../components/UserScores";
 import UserActivity from "../components/UserActivity";
 import { PrimaryButton } from "../components/shared/Buttons";
 import PasswordChangeModal from "../components/PasswordChange";
@@ -24,8 +24,8 @@ interface UserInfoData {
 const ProfilePage: React.FC = () => {
   const { username } = useParams<{ username: string }>();
   const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
-  const [userMetrics, setUserMetrics] = useState<UserMetrics | null>(null);
-  const [userScores, setUserScores] = useState<UserScores | null>(null);
+  const [userMetrics, setUserMetrics] = useState<Metrics | null>(null);
+  const [userScores, setUserScores] = useState<Scores | null>(null);
   const [isCurrAdmin, setIsCurrAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +84,7 @@ const ProfilePage: React.FC = () => {
     };
 
     fetchData();
-  }, [username, refreshFlag]);
+  }, [username, currUsername, refreshFlag]);
 
   if (error) return <p style={{ color: "red" }}>{error}</p>;
   if (loading) return <Loader></Loader>;

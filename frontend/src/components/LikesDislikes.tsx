@@ -90,7 +90,7 @@ const LikesDislikes: React.FC<{ threadId: string }> = ({ threadId }) => {
 
     useEffect(() => {
         fetchInteractionData();
-    }, [threadId]);
+    }, [threadId, fetchInteractionData]);
 
     return (
         <div>

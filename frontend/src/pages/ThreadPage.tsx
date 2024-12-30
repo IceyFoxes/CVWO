@@ -41,7 +41,7 @@ const ThreadDetails: React.FC = () => {
             console.error("Failed to fetch thread details:", error);
             setError("Failed to load thread details. Please try again.");
         }
-    }, [id, username, isModalOpen]);
+    }, [id, username]);
 
     useEffect(() => {
         fetchThreadDetails();

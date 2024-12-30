@@ -37,7 +37,7 @@ const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, 
             }
         };
         fetchData();
-    }, []);
+    }, [username]);
 
     const handleSubmit = async () => {
         try {
