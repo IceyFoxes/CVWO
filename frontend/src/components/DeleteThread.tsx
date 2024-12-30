@@ -1,51 +1,59 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import CustomModal from "./shared/Modal";
+import { useAlert } from "./contexts/AlertContext";
 import { deleteThread, getThreadById } from "../services/threadService";
+import { DangerButton } from "./shared/Buttons";
 
-export interface DeleteThreadProps {
-  threadId: number;
-  authorized?: boolean;
-}
+const DeleteThread: React.FC<{ threadId: string; authorized?: boolean }> = ({ threadId, authorized = false }) => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const { showAlert } = useAlert();
+    const navigate = useNavigate();
 
-const DeleteThread: React.FC<DeleteThreadProps> = ({ threadId, authorized = false }) => {
-  const navigate = useNavigate();
-  const handleDelete = async () => {
-    const username = localStorage.getItem("username");
-    if (!username) {
-      alert("You must be logged in to delete a thread.");
-      return;
+    const handleOpenModal = () => setIsModalOpen(true);
+    const handleCloseModal = () => setIsModalOpen(false);
+
+    const handleDelete = async () => {
+        try {
+            const username = sessionStorage.getItem("username");
+            const data = await getThreadById(threadId);
+
+            await deleteThread(threadId, username ?? "");
+            showAlert("Thread deleted successfully.", "success");
+            handleCloseModal();
+
+            const { parent_id } = data.thread;
+            if (parent_id) {
+                navigate(`/threads/${parent_id}`);
+            } else {
+                navigate("/");
+            }
+        } catch (error) {
+            console.error("Error during delete operation:", error);
+            showAlert("Failed to delete the thread. Please try again.", "error");
+        }
+    };
+
+    if (!authorized) {
+        console.log("Not authorized to delete.");
+        return null;
     }
 
-    const confirmDelete = window.confirm("Are you sure you want to delete this thread?");
-    if (!confirmDelete) return;
+    return (
+        <div>
+            <DangerButton onClick={handleOpenModal}>Delete</DangerButton>
 
-    try {
-
-      const data = await getThreadById(threadId.toString());
-      await deleteThread(threadId.toString(), username)
-
-      const { parent_id } = data.thread;
-      if (parent_id) {
-        navigate(`/threads/${parent_id}`);
-      } else {
-        navigate('/');
-      }
-    } catch (error) {
-      console.error("Error during delete operation:", error);
-      alert("Failed to delete the thread. Please try again.");
-    }
-  };
-
-  if (!authorized) {
-    console.log("Not authorized to delete."); 
-    return null;
-  }
-
-  return (
-    <button onClick={handleDelete} style={{ color: "red" }}>
-      Delete
-    </button>
-  );
+            <CustomModal
+                open={isModalOpen}
+                onClose={handleCloseModal}
+                title="Confirm Deletion"
+                onConfirm={handleDelete}
+            >
+                <p>Are you sure you want to delete this thread? This action cannot be undone.</p>
+            </CustomModal>
+        </div>
+    );
 };
 
 export default DeleteThread;
+

@@ -3,15 +3,17 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 // Middleware to verify JWT tokens
 func AuthMiddleware() gin.HandlerFunc {
-	var secretKey = []byte("1234567890") // Use a secure, environment-controlled secret key
+	var secretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

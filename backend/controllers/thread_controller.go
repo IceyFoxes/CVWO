@@ -10,13 +10,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Get Main Thread (Thread List)
-func GetMainThread(c *gin.Context, db *sql.DB) {
+// Retrieves threads with optional filters for category, and tag
+func GetThreads(c *gin.Context, db *sql.DB) {
 	// Extract query parameters
-	searchQuery := c.DefaultQuery("search", "")
+	query := c.DefaultQuery("query", "")
 	sortBy := c.DefaultQuery("sortBy", "created_at")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	category := c.Query("category")
+	tag := c.Query("tag")
+
+	// Validate pagination inputs
 	if page < 1 {
 		page = 1
 	}
@@ -25,35 +29,48 @@ func GetMainThread(c *gin.Context, db *sql.DB) {
 	}
 	offset := (page - 1) * limit
 
-	// Call the model function to fetch threads
-	threads, err := models.FetchMainThreads(db, searchQuery, sortBy, limit, offset)
+	// Fetch threads with the appropriate filters
+	threads, err := models.FetchThreads(db, query, sortBy, limit, offset, tag, category)
 	if err != nil {
 		log.Printf("Error fetching threads: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch threads"})
 		return
 	}
 
+	// Count threads for pagination
+	totalCount := models.GetThreadCount(db, query, tag, category)
+	totalPages := (totalCount + limit - 1) / limit
+
 	// Check if no threads are returned
 	if len(threads) == 0 {
-		c.JSON(http.StatusOK, gin.H{"threads": []interface{}{}})
+		c.JSON(http.StatusOK, gin.H{
+			"threads":     []interface{}{},
+			"currentPage": page,
+			"totalPages":  totalPages,
+		})
 		return
 	}
 
-	// Respond with the threads and pagination info
+	// Respond with threads and pagination info
 	c.JSON(http.StatusOK, gin.H{
 		"threads":     threads,
 		"currentPage": page,
-		"totalPages":  calculateTotalPagesForThreads(db, searchQuery, limit), // Assuming this function is defined elsewhere
+		"totalPages":  totalPages,
 	})
 }
 
 // Check thread authorization
-func GetAuthorization(c *gin.Context, db *sql.DB) {
+func GetThreadAuthorization(c *gin.Context, db *sql.DB) {
 	// Get username from query
 	username := c.DefaultQuery("username", "")
 
+	if username == "" {
+		c.JSON(200, gin.H{"authorized": false, "message": "User is not authorized to modify this thread"})
+		return
+	}
+
 	// Fetch user ID
-	userID, err := getUserIDFromUsername(db, username)
+	userID, err := models.GetUserIDFromUsername(db, username)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Invalid userID"})
 		return
@@ -67,7 +84,7 @@ func GetAuthorization(c *gin.Context, db *sql.DB) {
 	}
 
 	// Check if the user is authorized (owner or admin)
-	authorized := checkThreadOwnershipOrAdmin(db, username, userID, threadID)
+	authorized := models.CheckThreadOwnershipOrAdmin(db, username, userID, threadID)
 
 	// If the user is not authorized
 	if !authorized {
@@ -112,12 +129,7 @@ func GetThreadDetails(c *gin.Context, db *sql.DB) {
 	//Return empty array instead of null
 	if len(comments) == 0 {
 		c.JSON(http.StatusOK, gin.H{
-			"thread": gin.H{
-				"id":         thread.ID,
-				"title":      thread.Title,
-				"content":    thread.Content,
-				"created_at": thread.CreatedAt,
-			},
+			"thread":   thread,
 			"comments": []interface{}{},
 		})
 		return
@@ -125,44 +137,77 @@ func GetThreadDetails(c *gin.Context, db *sql.DB) {
 
 	// Respond with thread details and comments
 	c.JSON(http.StatusOK, gin.H{
-		"thread": gin.H{
-			"id":         thread.ID,
-			"title":      thread.Title,
-			"content":    thread.Content,
-			"created_at": thread.CreatedAt,
-		},
+		"thread":   thread,
 		"comments": comments,
 	})
 }
 
-// Create a thread
+// GetCategories handles the request to fetch all categories
+func GetCategories(c *gin.Context, db *sql.DB) {
+	// Call the model to fetch categories
+	categories, err := models.FetchCategories(db)
+	if err != nil {
+		log.Printf("Error fetching categories: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
+		return
+	}
+
+	// Return categories as JSON
+	c.JSON(http.StatusOK, gin.H{"categories": categories})
+}
+
+// GetCategories handles the request to fetch all tags
+func GetTags(c *gin.Context, db *sql.DB) {
+	// Call the model to fetch tags
+	tags, err := models.FetchTags(db)
+	if err != nil {
+		log.Printf("Error fetching tags: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tags"})
+		return
+	}
+
+	// Return categories as JSON
+	c.JSON(http.StatusOK, gin.H{"tags": tags})
+}
+
+// Create a thread (+ Tags + Category)
 func CreateThread(c *gin.Context, db *sql.DB) {
-	// Get the username from the query or header
-	username := c.DefaultQuery("username", "")
-	if username == "" {
+	// Bind the incoming JSON request to the struct for thread data
+	var requestBody struct {
+		Username string  `json:"username"` // Add username to the request body
+		Title    *string `json:"title"`
+		Content  *string `json:"content"`
+		Category string  `json:"category"`
+		Tag      string  `json:"tag"`
+	}
+
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	// Check if username is provided
+	if requestBody.Username == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Username is required"})
 		return
 	}
 
 	// Validate and get the user ID using the helper function
-	userID, err := getUserIDFromUsername(db, username)
+	userID, err := models.GetUserIDFromUsername(db, requestBody.Username)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username"})
 		return
 	}
 
-	// Bind the incoming JSON request to the struct for thread data
-	var thread struct {
+	// Validate the thread data using a helper function
+	thread := struct {
 		Title   *string `json:"title"`
 		Content *string `json:"content"`
+	}{
+		Title:   requestBody.Title,
+		Content: requestBody.Content,
 	}
 
-	if err := c.ShouldBindJSON(&thread); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	// Validate the thread data using a helper function
 	errors := validateThread(db, false, &thread)
 	if len(errors) > 0 {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": errors})
@@ -170,7 +215,7 @@ func CreateThread(c *gin.Context, db *sql.DB) {
 	}
 
 	// Use the model function to create the thread
-	err = models.CreateThread(db, thread.Title, thread.Content, userID)
+	err = models.CreateThread(db, requestBody.Title, requestBody.Content, userID, requestBody.Category, requestBody.Tag)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create thread"})
 		return
@@ -185,7 +230,7 @@ func UpdateThread(c *gin.Context, db *sql.DB) {
 	username := c.DefaultQuery("username", "")
 
 	// Validate user
-	userID, err := getUserIDFromUsername(db, username)
+	userID, err := models.GetUserIDFromUsername(db, username)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -199,7 +244,7 @@ func UpdateThread(c *gin.Context, db *sql.DB) {
 	}
 
 	// Check ownership or admin privileges
-	authorized := checkThreadOwnershipOrAdmin(db, username, userID, threadID)
+	authorized := models.CheckThreadOwnershipOrAdmin(db, username, userID, threadID)
 	if !authorized {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to edit this thread"})
 		return
@@ -248,7 +293,7 @@ func DeleteThread(c *gin.Context, db *sql.DB) {
 	username := c.DefaultQuery("username", "")
 
 	// Validate and get the user ID using the helper function
-	userID, err := getUserIDFromUsername(db, username)
+	userID, err := models.GetUserIDFromUsername(db, username)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -262,7 +307,7 @@ func DeleteThread(c *gin.Context, db *sql.DB) {
 	}
 
 	// Check ownership or admin status
-	authorized := checkThreadOwnershipOrAdmin(db, username, userID, threadID)
+	authorized := models.CheckThreadOwnershipOrAdmin(db, username, userID, threadID)
 	if !authorized {
 		c.JSON(403, gin.H{"error": "You are not authorized to delete this thread"})
 		return
@@ -292,7 +337,7 @@ func CommentThread(c *gin.Context, db *sql.DB) {
 	}
 
 	// Validate username and get user ID
-	userID, err := getUserIDFromUsername(db, username)
+	userID, err := models.GetUserIDFromUsername(db, username)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username"})
 		return

@@ -33,18 +33,45 @@ func initializeDatabase() (*sql.DB, error) {
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				title TEXT, -- Optional for comments
 				content TEXT NOT NULL,
+				category_id INTEGER,
+				tag_id INTEGER,
 				user_id INTEGER NOT NULL,
 				parent_id INTEGER, -- NULL for top-level threads
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				depth INTEGER DEFAULT 0, -- Nesting level
+				depth INTEGER DEFAULT 0, -- Nesting level,
 				FOREIGN KEY (user_id) REFERENCES users(id),
 				FOREIGN KEY (parent_id) REFERENCES threads(id) ON DELETE CASCADE
+			);
+		`,
+		"saved threads": `
+			CREATE TABLE IF NOT EXISTS saved_threads (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				user_id INTEGER NOT NULL,
+				thread_id INTEGER NOT NULL,
+				FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+				FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
+				UNIQUE (user_id, thread_id) -- Ensure a user can't save the same thread multiple times
+			);
+		`,
+		"categories": `
+			CREATE TABLE IF NOT EXISTS categories (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT UNIQUE NOT NULL
+			);
+		`,
+		"tags": `
+			CREATE TABLE IF NOT EXISTS tags (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT UNIQUE NOT NULL
 			);
 		`,
 		"users": `
 			CREATE TABLE IF NOT EXISTS users (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				username TEXT UNIQUE NOT NULL,
+				password TEXT NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				bio TEXT DEFAULT 'This user has not added a bio yet.',
 				is_admin BOOLEAN NOT NULL DEFAULT 0
 			);
 		`,
@@ -82,13 +109,24 @@ func initializeDatabase() (*sql.DB, error) {
 
 	// Initial seeds
 	seeds := map[string]string{
+		"categories": `
+			INSERT OR IGNORE INTO categories (id, name) VALUES 
+			(1, 'Featured'),
+			(2, 'Coursework'), 
+			(3, 'Events'), 
+			(4, 'Community')
+		`,
 		"admin_user": `
-			INSERT OR IGNORE INTO users (id, username, is_admin)
-			VALUES (1, 'admin_user', 1)
+			INSERT OR IGNORE INTO users (id, username, password, created_at, bio, is_admin)
+			VALUES (1, 'admin_user', '$2y$10$rEbQNZucaJ3pgh.qq/WzLujs7F97Zm24ODYam41gcSw1cc4DbiWwK', datetime('now'), 'I am the king.', 1)
 		`,
 		"welcome_thread": `
-			INSERT OR IGNORE INTO threads (id, title, content, user_id)
-			VALUES (1, 'Welcome to the Forum', 'Please follow the rules.', 1)
+			INSERT OR IGNORE INTO threads (id, title, content, category_id, tag_id, user_id, created_at)
+			VALUES (1, 'Welcome to the Forum', 'Please follow the rules.', 1, 1, 1, datetime('now'))
+		`,
+		"tags": `
+			INSERT OR IGNORE INTO tags (id, name) VALUES 
+			(1, 'rules')
 		`,
 	}
 
@@ -110,5 +148,6 @@ func ConnectDB() (*sql.DB, error) {
 		log.Printf("Error initializing the database: %v", err)
 		return nil, err
 	}
+
 	return db, nil
 }

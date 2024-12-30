@@ -1,77 +1,82 @@
 import React, { useState } from "react";
+import { Box, TextField, Typography } from "@mui/material";
 import CommentList from "./CommentList";
-import Search from "./Search";
-import Sort from "./Sort";
+import SearchBar from "./widgets/SearchBar";
+import SortMenu from "./widgets/SortMenu";
 import { postComment } from "../services/threadService";
+import { useAlert } from "./contexts/AlertContext";
+import { useRefresh } from "./contexts/RefreshContext"; // Import RefreshContext
+import { inputStyles } from "./shared/Styles";
+import { PrimaryButton } from "./shared/Buttons";
 
 interface CommentSectionProps {
-    threadId: number;
+    threadId: string;
     username: string | null;
 }
 
 const CommentSection: React.FC<CommentSectionProps> = ({ threadId, username }) => {
     const [commentContent, setCommentContent] = useState<string>("");
     const [showCommentBox, setShowCommentBox] = useState<boolean>(false);
-    const [refreshFlag, setRefreshFlag] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState<string>(""); 
-    const [sortBy, setSortBy] = useState<string>("created_at")
+    const [searchQuery, setSearchQuery] = useState<string>("");
+    const [sortBy, setSortBy] = useState<string>("created_at");
+
+    const { showAlert } = useAlert();
+    const { triggerRefresh } = useRefresh(); 
 
     const handleCommentSubmit = async () => {
         if (!username) {
-            alert("You must be logged in to comment.");
+            showAlert("You must be logged in to comment.", "error");
             return;
         }
-    
+
         if (!commentContent.trim()) {
-            alert("Comment content cannot be empty.");
+            showAlert("Comment content cannot be empty.", "error");
             return;
         }
-    
+
         try {
-            await postComment(threadId, username, commentContent); // Call the service function
-            alert("Comment added successfully.");
-            setCommentContent(""); // Clear the comment field
-            setShowCommentBox(false); // Hide the comment box
-            setRefreshFlag(!refreshFlag); // Trigger refresh
+            await postComment(threadId, username, commentContent);
+            showAlert("Comment added successfully.", "success");
+            setCommentContent("");
+            setShowCommentBox(false);
+            triggerRefresh(); // Trigger refresh when a comment is added
         } catch (error: any) {
             console.error("Failed to add comment:", error);
-            setError(error.response?.data?.error || "Failed to add comment. Please try again.");
+            showAlert("Failed to add comment. Please try again.", "error");
         }
     };
 
-    if (error) return <p style={{ color: "red" }}>{error}</p>;
-
     return (
-        <div style={{ marginTop: "20px" }}>
-            <Search searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-            <Sort sortBy={sortBy} setSortBy={setSortBy} excludedOptions={["comments"]} />
+        <Box sx={{ marginTop: 4 }}>
+            <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+            <SortMenu sortBy={sortBy} onSortChange={setSortBy} excludedOptions={["comments"]} />
 
-            <button onClick={() => setShowCommentBox(!showCommentBox)} style={{ marginBottom: "10px" }}>
+            <PrimaryButton onClick={() => setShowCommentBox(!showCommentBox)}>
                 {showCommentBox ? "Cancel Comment" : "Add Comment"}
-            </button>
+            </PrimaryButton>
+
             {showCommentBox && (
-                <div>
-                    <textarea
+                <Box sx={{ marginBottom: 4 }}>
+                    <TextField
+                        fullWidth
+                        multiline
+                        rows={4}
                         value={commentContent}
                         onChange={(e) => setCommentContent(e.target.value)}
                         placeholder="Write your comment here..."
-                        style={{ width: "100%", height: "100px", marginTop: "10px" }}
-                    ></textarea>
-                    <button onClick={handleCommentSubmit} style={{ marginTop: "10px" }}>
-                        Submit Comment
-                    </button>
-                </div>
+                        sx={inputStyles}
+                    />
+                    <PrimaryButton onClick={handleCommentSubmit}>Submit Comment</PrimaryButton>
+                </Box>
             )}
-            <h4>Comments</h4>
-            <CommentList 
-                threadId={threadId} 
-                searchQuery={searchQuery} 
-                sortBy={sortBy} 
-                refreshFlag={refreshFlag}  
-            />
-        </div>
+
+            <Typography variant="h6" sx={{ marginTop: 4, marginBottom: 2 }}>
+                Comments
+            </Typography>
+            <CommentList threadId={threadId} searchQuery={searchQuery} sortBy={sortBy} />
+        </Box>
     );
 };
 
 export default CommentSection;
+

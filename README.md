@@ -47,4 +47,34 @@ Run the frontend
 
 The frontend will be available on http://localhost:3000.
 
+Backup Setup
+
+Open Windows Task Scheduler (Win + R, type taskschd.msc, press Enter).
+
+Click Create Task.
+
+In the General tab:
+
+    Provide a name.
+
+    Select "Run whether user is logged on or not."
+
+In the Triggers tab:
+
+    Click New and set the schedule.
+
+In the Actions tab:
+
+    Click New.
+
+    Select Start a Program.
+
+    Browse to the backup.bat file.
+
+In the Conditions tab:
+
+    Uncheck "Start the task only if the computer is on AC power" if running on a server.
+
+Save the task.
+
 If you encounter any issues, feel free to contact me.

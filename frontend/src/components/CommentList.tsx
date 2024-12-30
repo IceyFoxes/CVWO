@@ -1,33 +1,33 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { getThreadById } from "../services/threadService";
+import { useAlert } from "./contexts/AlertContext";
+import { useRefresh } from "./contexts/RefreshContext";
+import { Box, Typography } from "@mui/material";
+import CustomCommentCard from "./shared/CommentCard";
+import { PrimaryButton } from "./shared/Buttons";
 
-interface Comment {
+export interface Comment {
     id: number;
-    parent_id: number | null;
+    parentId: number | null;
     author: string;
     content: string;
-    created_at: string;
-    likes_count: number;
-    dislikes_count: number;
-    children: Comment[]; // Always initialized as an empty array
+    createdAt: string;
+    likesCount: number;
+    dislikesCount: number;
+    depth: number;
+    children: Comment[];
 }
 
-// Utility to build comment hierarchy
 const buildCommentTree = (comments: Comment[]): Comment[] => {
     const commentMap = new Map<number, Comment>();
-
-    // Map comments by their ID and initialize children
     comments.forEach((comment) => {
         commentMap.set(comment.id, { ...comment, children: [] });
     });
 
     const rootComments: Comment[] = [];
-
-    // Assign children to their parents
     commentMap.forEach((comment) => {
-        if (comment.parent_id !== null && commentMap.has(comment.parent_id)) {
-            commentMap.get(comment.parent_id)?.children.push(comment);
+        if (comment.parentId !== null && commentMap.has(comment.parentId)) {
+            commentMap.get(comment.parentId)?.children.push(comment);
         } else {
             rootComments.push(comment);
         }
@@ -37,76 +37,76 @@ const buildCommentTree = (comments: Comment[]): Comment[] => {
 };
 
 const CommentItem: React.FC<{ comment: Comment }> = ({ comment }) => {
-    const [showChildren, setShowChildren] = useState(true); // Default to expanded
+    const [showChildren, setShowChildren] = useState(true);
 
     return (
-        <li style={{ marginBottom: "10px", paddingLeft: `${comment.parent_id ? 20 : 0}px`, borderLeft: "1px solid #ccc" }}>
-            <p>{comment.content}</p>
-            <small>
-                By: {comment.author} | Likes: {comment.likes_count} | Dislikes: {comment.dislikes_count}
-            </small>
-            <br />
-            <small>Posted on: {new Date(comment.created_at).toLocaleString()}</small>
-            <br />
-            <Link to={`/threads/${comment.id}`} style={{ color: "blue" }}>
-                View Details
-            </Link>
-            <br />
-            {comment.children.length > 0 && (
-                <button onClick={() => setShowChildren(!showChildren)}>
-                    {showChildren ? "Collapse Replies" : "Expand Replies"}
-                </button>
-            )}
+        <CustomCommentCard thread={comment} isMaxDepth={comment.depth === 3}>
+            {/* Toggle Replies */}
+            <Box sx={{ marginTop: 1 }} onClick={(e) => e.stopPropagation()}>
+                {comment.children.length > 0 && (
+                    <PrimaryButton
+                        onClick={() => setShowChildren(!showChildren)}
+                        style={{ marginLeft: 8 }}
+                    >
+                        {showChildren ? "Collapse Replies" : "Expand Replies"}
+                    </PrimaryButton>
+                )}
+            </Box>
+
+            {/* Render Children */}
             {showChildren && (
-                <ul>
+                <Box sx={{ paddingLeft: 2 }}>
                     {comment.children.map((child) => (
                         <CommentItem key={child.id} comment={child} />
                     ))}
-                </ul>
+                </Box>
             )}
-        </li>
+        </CustomCommentCard>
     );
 };
 
-const CommentList: React.FC<{ threadId: number; refreshFlag: boolean; searchQuery: string; sortBy: string }> = ({
+const CommentList: React.FC<{ threadId: string; searchQuery: string; sortBy: string }> = ({
     threadId,
-    refreshFlag,
     searchQuery,
     sortBy,
 }) => {
     const [comments, setComments] = useState<Comment[]>([]);
-    const [error, setError] = useState<string | null>(null);
+    const { refreshFlag } = useRefresh();
+    const { showAlert } = useAlert();
 
     useEffect(() => {
         const fetchComments = async () => {
             try {
-                const data = await getThreadById(threadId.toString(), { query: searchQuery, sortBy }); // Pass extra params
+                const data = await getThreadById(threadId.toString(), { query: searchQuery, sortBy });
+
                 const { comments } = data;
-        
                 if (Array.isArray(comments)) {
-                    setComments(comments); // Update state with comments
+                    setComments(comments);
                 } else {
                     throw new Error("Invalid response format");
                 }
             } catch (error: any) {
                 console.error("Failed to fetch comments:", error);
-                setError(error.response?.data?.error || "Failed to load comments. Please try again.");
+                showAlert("Failed to load comments. Please try again.", "error");
             }
-        };        
+        };
         fetchComments();
-    }, [threadId, refreshFlag, searchQuery, sortBy]);
+    }, [threadId, refreshFlag, searchQuery, sortBy, showAlert]);
 
-    const commentTree = useMemo(() => buildCommentTree(comments), [comments]);
+    const commentTree = useMemo(() => {
+        return buildCommentTree(comments);
+    }, [comments]);
 
-    if (error) return <p style={{ color: "red" }}>{error}</p>;
-    if (comments.length === 0) return <p>No comments yet...</p>;
+    if (comments.length === 0) {
+        return <Typography>No comments yet...</Typography>;
+    }
 
     return (
-        <ul style={{ listStyleType: "none", paddingLeft: "0" }}>
+        <Box sx={{ padding: 2 }}>
             {commentTree.map((comment) => (
                 <CommentItem key={comment.id} comment={comment} />
             ))}
-        </ul>
+        </Box>
     );
 };
 

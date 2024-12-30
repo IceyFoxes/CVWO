@@ -1,60 +1,107 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createThread } from '../services/threadService';
+import React, { useState, useEffect } from "react";
+import { Box, TextField, MenuItem } from "@mui/material";
+import CustomModal from "./shared/Modal";
+import TagInput from "./TagInput";
+import { inputStyles } from "./shared/Styles";
+import { createThread, fetchCategories } from "../services/threadService";
+import { PrimaryButton } from "./shared/Buttons";
+import { useAlert } from "./contexts/AlertContext";
+import { getAuthorization } from "../services/userService";
+import { useRefresh } from "./contexts/RefreshContext";
 
-const CreateThread: React.FC = () => {
-  const [title, setTitle] = useState<string>('');
-  const [content, setContent] = useState<string>('');
-  const navigate = useNavigate();
+const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+    const [title, setTitle] = useState<string>("");
+    const [content, setContent] = useState<string>("");
+    const [tag, setTag] = useState<string>("");
+    const [category, setCategory] = useState<string>("");
+    const [categories, setCategories] = useState<string[]>([]);
+    const { showAlert } = useAlert();
+    const { triggerRefresh } = useRefresh();
 
-  const username = sessionStorage.getItem('username');
+    const username = sessionStorage.getItem("username");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-        if (!username) {
-          console.error("Username is undefined. Redirecting to Login.");
-          navigate("/login");
-          return null;
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const categoriesData = await fetchCategories();
+                const allCategories = categoriesData.categories.map((cat: any) => cat.name);
+
+                const isAdmin = (username && await getAuthorization(username));
+                const filteredCategories = allCategories.filter(
+                    (category: string) => category !== "Featured" || isAdmin
+                );
+
+                setCategories(filteredCategories);
+            } catch (error) {
+                console.error("Failed to fetch categories:", error);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const handleSubmit = async () => {
+        try {
+            await createThread(username, title, content, category, tag);
+            triggerRefresh();
+            showAlert("Thread created successfully!", "success");
+            onClose();
+        } catch (err: any) {
+            let errorMessage = "An error occurred while creating the thread.";
+
+            if (err.response?.data?.error) {
+                errorMessage = err.response.data.error;
+            } else if (err.response?.data?.errors) {
+                errorMessage = err.response.data.errors.join(", "); // Combine multiple errors into one message
+            }
+
+            showAlert(errorMessage, "error");
         }
-        await createThread(username, title, content);
-        alert("Thread created successfully!");
-        navigate("/");
-    } catch (error: any) {
-        if (error.response) {
-            const errors = error.response.data.errors || [error.response.data.error];
-            alert(errors.join("\n"));
-        } else {
-            alert("An unexpected error occurred. Please try again.");
-        }
-    }
-};
+    };
 
-  return (
-    <div>
-      <h1>Create a New Thread</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="title">Title:</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="content">Content:</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Create Thread</button>
-      </form>
-    </div>
-  );
+    return (
+        <CustomModal open={open} onClose={onClose} title="Create a New Thread" content="">
+            <Box>
+                <TextField
+                    fullWidth
+                    label="Title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    margin="normal"
+                    required
+                    sx={inputStyles}
+                />
+                <TextField
+                    fullWidth
+                    label="Content"
+                    multiline
+                    rows={4}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    margin="normal"
+                    required
+                    sx={inputStyles}
+                />
+                <TextField
+                    select
+                    fullWidth
+                    label="Category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    margin="normal"
+                    required
+                    sx={inputStyles}
+                >
+                    {categories.map((cat) => (
+                        <MenuItem key={cat} value={cat}>
+                            {cat}
+                        </MenuItem>
+                    ))}
+                </TextField>
+                <TagInput tag={tag} setTag={setTag} />
+                <PrimaryButton onClick={handleSubmit}>Create New Thread</PrimaryButton>
+            </Box>
+        </CustomModal>
+    );
 };
 
 export default CreateThread;

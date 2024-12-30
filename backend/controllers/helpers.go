@@ -4,13 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	_ "github.com/joho/godotenv/autoload"
 )
-
-var secretKey = []byte("1234567890") // Use a secure, environment-controlled secret key
 
 // Helper function to generate username-based authentication tokens (JWT)
 func generateJWT(username string) (string, error) {
@@ -19,6 +19,10 @@ func generateJWT(username string) (string, error) {
 		"exp":      time.Now().Add(24 * time.Hour).Unix(), // Token expires in 24 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
+	if len(secretKey) == 0 {
+		return "", fmt.Errorf("JWT_SECRET_KEY environment variable not set")
+	}
 	return token.SignedString(secretKey)
 }
 
@@ -86,77 +90,4 @@ func validateThread(db *sql.DB, isEdit bool, thread *struct {
 	}
 
 	return errors
-}
-
-// Helper function to check if the logged-in user is an admin
-func isAdmin(db *sql.DB, username string) (bool, error) {
-	var isAdmin bool
-	err := db.QueryRow("SELECT is_admin FROM users WHERE username = ?", username).Scan(&isAdmin)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil // User does not exist
-		}
-		return false, err // Other database errors
-	}
-	return isAdmin, nil
-}
-
-// Helper function to check if the user is the owner of the thread or an admin
-func checkThreadOwnershipOrAdmin(db *sql.DB, username string, userID int, threadID int) bool {
-	// Check if the thread exists and get the user_id (thread creator)
-	var threadCreatorID int
-	err := db.QueryRow("SELECT user_id FROM threads WHERE id = ?", threadID).Scan(&threadCreatorID)
-	if err != nil {
-		return false // If thread does not exist or there is an error, deny access
-	}
-
-	// If the user is the thread owner, return true
-	if userID == threadCreatorID {
-		return true
-	}
-
-	// Check if the user is an admin
-	isAdmin, err := isAdmin(db, username)
-	if err != nil {
-		return false // If there's an error in checking admin status, deny access
-	}
-
-	// If the user is an admin, allow modification
-	return isAdmin
-}
-
-// Helper function to get user ID from username and validate username existence
-func getUserIDFromUsername(db *sql.DB, username string) (int, error) {
-	if username == "" {
-		return 0, fmt.Errorf("username is required")
-	}
-
-	var userID int
-	err := db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return 0, fmt.Errorf("username does not exist")
-		}
-		return 0, fmt.Errorf("failed to fetch user information")
-	}
-
-	return userID, nil
-}
-
-// Helper function to calculate total pages (ThreadList)
-func calculateTotalPagesForThreads(db *sql.DB, searchQuery string, limit int) int {
-	var totalCount int
-	query := `
-        SELECT COUNT(*) 
-        FROM threads 
-        WHERE (title IS NOT NULL AND parent_id IS NULL)
-        AND (title LIKE ? OR content LIKE ?)
-    `
-	err := db.QueryRow(query, "%"+searchQuery+"%", "%"+searchQuery+"%").Scan(&totalCount)
-	if err != nil {
-		log.Printf("Error calculating total pages: %v", err)
-		return 0
-	}
-	totalPages := (totalCount + limit - 1) / limit // Ceiling division
-	return totalPages
 }

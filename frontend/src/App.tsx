@@ -1,35 +1,29 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import './App.css';
-import ThreadList from './pages/ThreadList';
-import CreateThread from './components/CreateThread';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import Navbar from './components/Navbar';
-import EditThread from './components/EditThread';
-import ThreadDetails from './pages/ThreadDetails';
-import theme from "./theme";
-import { ThemeProvider } from "@mui/material/styles";
+import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+import ThreadDetails from './pages/ThreadPage';
 import CssBaseline from "@mui/material/CssBaseline";
+import UITestingPage from './pages/UITestingPage';
+import ColorModeProvider from "./theme/ColorMode";
+import HomePage from './pages/HomePage';
+import CategoryPage from './pages/CategoryPage';
+import ProfilePage from './pages/ProfilePage';
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-        <Router>
-          <Navbar />
-          <div className="App">
-            <Routes>
-              <Route path="/" element={<ThreadList />} />
-              <Route path="/create" element={<CreateThread />}/>
-              <Route path="/register" element={<Register />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/threads/:id" element={<ThreadDetails />} />
-              <Route path="/threads/edit/:id" element={<EditThread />} />
-            </Routes>
-          </div>
-        </Router>
-    </ThemeProvider>
+    <ColorModeProvider>
+        <CssBaseline />
+          <Router>
+              <div className="App">
+                  <Routes>
+                      <Route path="/" element={<HomePage />} />
+                      <Route path="/category/:category" element={<CategoryPage />} />
+                      <Route path="/threads/:id" element={<ThreadDetails />} />
+                      <Route path="/profile/:username" element={<ProfilePage />} />
+                      <Route path="/test" element={<UITestingPage />} />
+                  </Routes>
+              </div>
+          </Router>
+    </ColorModeProvider>
   );
 };
 

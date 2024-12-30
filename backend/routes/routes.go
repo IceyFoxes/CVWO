@@ -12,28 +12,38 @@ import (
 func RegisterRoutes(router *gin.Engine, db *sql.DB) {
 	// Group routes for threads
 	threadRoutes := router.Group("/threads")
-	threadRoutes.Use(middleware.AuthMiddleware())
 	{
-		threadRoutes.GET("", func(c *gin.Context) { controllers.GetMainThread(c, db) })
-		threadRoutes.GET("/:id/authorize", func(c *gin.Context) { controllers.GetAuthorization(c, db) })
+		threadRoutes.GET("", func(c *gin.Context) { controllers.GetThreads(c, db) })
+		threadRoutes.GET("/categories", func(c *gin.Context) { controllers.GetCategories(c, db) })
+		threadRoutes.GET("/tags", func(c *gin.Context) { controllers.GetTags(c, db) })
+		threadRoutes.GET("/:id/authorize", func(c *gin.Context) { controllers.GetThreadAuthorization(c, db) })
 		threadRoutes.GET("/:id", func(c *gin.Context) { controllers.GetThreadDetails(c, db) })
-		threadRoutes.POST("", func(c *gin.Context) { controllers.CreateThread(c, db) })
-		threadRoutes.POST("/:id/comment", func(c *gin.Context) { controllers.CommentThread(c, db) })
-		threadRoutes.PUT("/:id", func(c *gin.Context) { controllers.UpdateThread(c, db) })
-		threadRoutes.DELETE("/:id", func(c *gin.Context) { controllers.DeleteThread(c, db) })
+	}
+
+	// Protected Thread Routes
+	protectedThreadRoutes := router.Group("/threads")
+	protectedThreadRoutes.Use(middleware.AuthMiddleware())
+	{
+		protectedThreadRoutes.POST("", func(c *gin.Context) { controllers.CreateThread(c, db) })
+		protectedThreadRoutes.POST("/:id/comment", func(c *gin.Context) { controllers.CommentThread(c, db) })
+		protectedThreadRoutes.PUT("/:id", func(c *gin.Context) { controllers.UpdateThread(c, db) })
+		protectedThreadRoutes.DELETE("/:id", func(c *gin.Context) { controllers.DeleteThread(c, db) })
 	}
 
 	// Group routes for interactions
 	interactionRoutes := router.Group("/threads/:id")
 	interactionRoutes.Use(middleware.AuthMiddleware())
 	{
-		interactionRoutes.GET("/interaction", func(c *gin.Context) { controllers.GetInteractionState(c, db) })
+		interactionRoutes.GET("/likestate", func(c *gin.Context) { controllers.GetInteractionState(c, db) })
 		interactionRoutes.GET("/likes", func(c *gin.Context) { controllers.GetLikesCount(c, db) })
 		interactionRoutes.GET("/dislikes", func(c *gin.Context) { controllers.GetDislikesCount(c, db) })
+		interactionRoutes.GET("/savestate", func(c *gin.Context) { controllers.GetSaveState(c, db) })
 		interactionRoutes.POST("/like", func(c *gin.Context) { controllers.LikeThread(c, db) })
 		interactionRoutes.POST("/dislike", func(c *gin.Context) { controllers.DislikeThread(c, db) })
+		interactionRoutes.POST("/save", func(c *gin.Context) { controllers.SaveThread(c, db) })
 		interactionRoutes.DELETE("/like", func(c *gin.Context) { controllers.RemoveLike(c, db) })
 		interactionRoutes.DELETE("/dislike", func(c *gin.Context) { controllers.RemoveDislike(c, db) })
+		interactionRoutes.DELETE("/save", func(c *gin.Context) { controllers.UnsaveThread(c, db) })
 	}
 
 	// Group routes for users
@@ -41,5 +51,16 @@ func RegisterRoutes(router *gin.Engine, db *sql.DB) {
 	{
 		userRoutes.POST("", func(c *gin.Context) { controllers.Register(c, db) })
 		userRoutes.POST("/login", func(c *gin.Context) { controllers.Login(c, db) })
+		userRoutes.GET("/:username/authorize", func(c *gin.Context) { controllers.GetAuthorization(c, db) })
+		userRoutes.GET("/:username/info", func(c *gin.Context) { controllers.GetUserInfo(c, db) })
+		userRoutes.GET("/:username/scores", func(c *gin.Context) { controllers.GetUserScores(c, db) })
+		userRoutes.GET("/:username/metrics", func(c *gin.Context) { controllers.GetUserMetrics(c, db) })
+		userRoutes.GET("/:username/activity", func(c *gin.Context) { controllers.GetUserActivity(c, db) })
+		userRoutes.GET("/:username/saved", func(c *gin.Context) { controllers.GetUserSavedThreads(c, db) })
+		userRoutes.POST("/:username/password", func(c *gin.Context) { controllers.UpdatePasswordHandler(c, db) })
+		userRoutes.PUT("/:username/bio", func(c *gin.Context) { controllers.UpdateUserBio(c, db) })
+		userRoutes.PUT("/:username/promote", func(c *gin.Context) { controllers.PromoteUserHandler(c, db) })
+		userRoutes.PUT("/:username/demote", func(c *gin.Context) { controllers.DemoteUserHandler(c, db) })
+		userRoutes.GET("/leaderboard", func(c *gin.Context) { controllers.GetLeaderboard(c, db) })
 	}
 }

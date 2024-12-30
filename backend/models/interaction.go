@@ -64,19 +64,16 @@ func AddDislike(db *sql.DB, threadID, userID int) error {
 	return err
 }
 
-// RemoveLike removes a like for a thread
 func RemoveLike(db *sql.DB, threadID, userID int) error {
 	_, err := db.Exec("DELETE FROM likes WHERE thread_id = ? AND user_id = ?", threadID, userID)
 	return err
 }
 
-// RemoveDislike removes a dislike for a thread
 func RemoveDislike(db *sql.DB, threadID, userID int) error {
 	_, err := db.Exec("DELETE FROM dislikes WHERE thread_id = ? AND user_id = ?", threadID, userID)
 	return err
 }
 
-// CheckThreadExists verifies if a thread exists
 func CheckThreadExists(db *sql.DB, threadID int) error {
 	var exists int
 	err := db.QueryRow("SELECT COUNT(*) FROM threads WHERE id = ?", threadID).Scan(&exists)
@@ -84,4 +81,23 @@ func CheckThreadExists(db *sql.DB, threadID int) error {
 		return errors.New("thread not found")
 	}
 	return nil
+}
+
+func FetchSaveState(db *sql.DB, threadID, userID int) (bool, error) {
+	var saveState bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM saved_threads WHERE user_id = ? AND thread_id = ?)", userID, threadID).Scan(&saveState)
+	if err != nil {
+		return false, err
+	}
+	return saveState, err
+}
+
+func SaveThread(db *sql.DB, threadID, userID int) error {
+	_, err := db.Exec("INSERT INTO saved_threads (user_id, thread_id) VALUES (?, ?)", userID, threadID)
+	return err
+}
+
+func UnsaveThread(db *sql.DB, threadID, userID int) error {
+	_, err := db.Exec("DELETE FROM saved_threads WHERE user_id = ? AND thread_id = ?", userID, threadID)
+	return err
 }
