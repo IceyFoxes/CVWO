@@ -10,9 +10,9 @@ import (
 )
 
 func main() {
-	db, err := config.ConnectDB()
+	db, err := config.InitializeDatabase()
 	if err != nil {
-		log.Fatalf("Error connecting database: %v", err)
+		log.Fatalf("Error initializing database: %v", err)
 	}
 	defer db.Close()
 
