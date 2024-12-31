@@ -4,18 +4,19 @@ import CustomModal from "./shared/Modal";
 import { useAlert } from "./contexts/AlertContext";
 import { deleteThread, getThreadById } from "../services/threadService";
 import { DangerButton } from "./shared/Buttons";
+import { useAuth } from "./contexts/AuthContext";
 
 const DeleteThread: React.FC<{ threadId: string; authorized?: boolean }> = ({ threadId, authorized = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { showAlert } = useAlert();
     const navigate = useNavigate();
+    const { username } = useAuth();
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
 
     const handleDelete = async () => {
         try {
-            const username = sessionStorage.getItem("username");
             const data = await getThreadById(threadId);
 
             await deleteThread(threadId, username ?? "");
@@ -35,7 +36,6 @@ const DeleteThread: React.FC<{ threadId: string; authorized?: boolean }> = ({ th
     };
 
     if (!authorized) {
-        console.log("Not authorized to delete.");
         return null;
     }
 

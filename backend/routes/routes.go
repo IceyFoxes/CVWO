@@ -57,10 +57,16 @@ func RegisterRoutes(router *gin.Engine, db *sql.DB) {
 		userRoutes.GET("/:username/metrics", func(c *gin.Context) { controllers.GetUserMetrics(c, db) })
 		userRoutes.GET("/:username/activity", func(c *gin.Context) { controllers.GetUserActivity(c, db) })
 		userRoutes.GET("/:username/saved", func(c *gin.Context) { controllers.GetUserSavedThreads(c, db) })
+		userRoutes.GET("/leaderboard", func(c *gin.Context) { controllers.GetLeaderboard(c, db) })
+	}
+
+	// Protected User Routes
+	protectedUserRoutes := router.Group("/users")
+	protectedUserRoutes.Use(middleware.AuthMiddleware())
+	{
 		userRoutes.POST("/:username/password", func(c *gin.Context) { controllers.UpdatePasswordHandler(c, db) })
 		userRoutes.PUT("/:username/bio", func(c *gin.Context) { controllers.UpdateUserBio(c, db) })
 		userRoutes.PUT("/:username/promote", func(c *gin.Context) { controllers.PromoteUserHandler(c, db) })
 		userRoutes.PUT("/:username/demote", func(c *gin.Context) { controllers.DemoteUserHandler(c, db) })
-		userRoutes.GET("/leaderboard", func(c *gin.Context) { controllers.GetLeaderboard(c, db) })
 	}
 }

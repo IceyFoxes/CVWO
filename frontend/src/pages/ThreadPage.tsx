@@ -11,6 +11,7 @@ import UpdateThread from "../components/UpdateThread";
 import { Thread } from "../components/CategoryGroup";
 import Loader from "../components/shared/Loader";
 import SaveUnsave from "../components/SaveUnsave";
+import { useAuth } from "../components/contexts/AuthContext";
 
 const ThreadDetails: React.FC = () => {
     const { id = "" } = useParams<{ id: string }>();
@@ -18,12 +19,12 @@ const ThreadDetails: React.FC = () => {
     const [authorized, setAuthorized] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { username } = useAuth();
     const navigate = useNavigate();
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
 
-    const username = sessionStorage.getItem("username");
     const navigateToParent = () => {
         if (thread?.parentId) {
             navigate(`/threads/${thread.parentId}`);

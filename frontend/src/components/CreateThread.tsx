@@ -8,6 +8,7 @@ import { PrimaryButton } from "./shared/Buttons";
 import { useAlert } from "./contexts/AlertContext";
 import { getAuthorization } from "../services/userService";
 import { useRefresh } from "./contexts/RefreshContext";
+import { useAuth } from "./contexts/AuthContext";
 
 const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
     const [title, setTitle] = useState<string>("");
@@ -17,8 +18,7 @@ const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, 
     const [categories, setCategories] = useState<string[]>([]);
     const { showAlert } = useAlert();
     const { triggerRefresh } = useRefresh();
-
-    const username = sessionStorage.getItem("username");
+    const { username } = useAuth();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -26,7 +26,7 @@ const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, 
                 const categoriesData = await fetchCategories();
                 const allCategories = categoriesData.categories.map((cat: any) => cat.name);
 
-                const isAdmin = (username && await getAuthorization(username));
+                const isAdmin = await getAuthorization(username);
                 const filteredCategories = allCategories.filter(
                     (category: string) => category !== "Featured" || isAdmin
                 );

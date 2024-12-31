@@ -5,6 +5,7 @@ import { useAlert } from "./contexts/AlertContext";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import { useRefresh } from "./contexts/RefreshContext";
+import { useAuth } from "./contexts/AuthContext";
 
 interface SaveUnsaveProps {
     threadId: string; 
@@ -14,28 +15,29 @@ const SaveUnsave: React.FC<SaveUnsaveProps> = ({ threadId }) => {
     const [isSaved, setIsSaved] = useState(false);
     const { showAlert } = useAlert();
     const { triggerRefresh } = useRefresh(); 
-    
-    const username = sessionStorage.getItem("username");
+    const { isLoggedIn, username } = useAuth();
 
     useEffect(() => {
+        if (!username || !isLoggedIn) return;
         const fetchSaveStatus = async () => {
             try {
-                const savedData = await getSaveState(threadId, username ?? "");
+                const savedData = await getSaveState(threadId, username);
                 setIsSaved(savedData.isSaved);
             } catch (error) {
                 console.error("Failed to fetch save status:", error);
             }
         };
         fetchSaveStatus();
-    }, [threadId, username]);
+    }, [threadId, username, isLoggedIn]);
 
     const toggleSave = async () => {
+        if (!username || !isLoggedIn) return;
         try {
             if (isSaved) {
-                await unsaveThread(threadId, username ?? "");
+                await unsaveThread(threadId, username);
                 showAlert("Thread unsaved successfully!", "success");
             } else {
-                await saveThread(threadId, username ?? "");
+                await saveThread(threadId, username);
                 showAlert("Thread saved successfully!", "success");
             }
             setIsSaved(!isSaved);

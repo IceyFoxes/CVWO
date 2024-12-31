@@ -5,6 +5,7 @@ import { fetchCategories } from "../../services/threadService";
 import { listItemStyles, sidebarContainer } from "../shared/Styles";
 import { getUserSavedThreads } from "../../services/userService";
 import { useRefresh } from "../contexts/RefreshContext";
+import { useAuth } from "../contexts/AuthContext";
 
 interface Category {
     id: number;
@@ -21,13 +22,13 @@ const Sidebar: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
     const { refreshFlag } = useRefresh();
-    const username = sessionStorage.getItem("username");
+    const { isLoggedIn, username } = useAuth();
 
     // Fetch categories on mount
     useEffect(() => {
         const fetchData = async () => {
             try {
-                if (username) {
+                if (isLoggedIn) {
                     const savedThreadsData = await getUserSavedThreads(username ?? "");
                     setSavedThreads(savedThreadsData.savedThreads);
                 }
@@ -41,7 +42,7 @@ const Sidebar: React.FC = () => {
         };
 
         fetchData();
-    }, [username, refreshFlag]);
+    }, [username, isLoggedIn, refreshFlag]);
 
     return (
         <Box sx={sidebarContainer}>

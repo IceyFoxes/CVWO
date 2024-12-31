@@ -10,9 +10,10 @@ import {
 } from "../services/interactionService";
 import { PrimaryButton, DangerButton } from "./shared/Buttons";
 import { useAlert } from "./contexts/AlertContext";
+import { useAuth } from "./contexts/AuthContext";
 
 const LikesDislikes: React.FC<{ threadId: string }> = ({ threadId }) => {
-    const username = sessionStorage.getItem("username");
+    const { isLoggedIn, username } = useAuth();
     const [likesCount, setLikesCount] = useState(0);
     const [dislikesCount, setDislikesCount] = useState(0);
     const [liked, setLiked] = useState(false);
@@ -21,7 +22,7 @@ const LikesDislikes: React.FC<{ threadId: string }> = ({ threadId }) => {
     const { showAlert } = useAlert();
 
     const fetchInteractionData = async () => {
-        if (!username) return;
+        if (!username || !isLoggedIn) return;
         try {
             const [likes, dislikes, LikeState] = await Promise.all([
                 getLikesCount(threadId),
@@ -39,7 +40,7 @@ const LikesDislikes: React.FC<{ threadId: string }> = ({ threadId }) => {
     };
 
     const handleLikeToggle = async () => {
-        if (!username) {
+        if (!username || !isLoggedIn) {
             showAlert("You must be logged in to like a thread.", "error");
             return;
         }
@@ -66,7 +67,7 @@ const LikesDislikes: React.FC<{ threadId: string }> = ({ threadId }) => {
     };
 
     const handleDislikeToggle = async () => {
-        if (!username) {
+        if (!username || !isLoggedIn) {
             showAlert("You must be logged in to dislike a thread.", "error");
             return;
         }

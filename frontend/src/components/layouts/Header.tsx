@@ -27,9 +27,7 @@ const Header: React.FC = () => {
     const handleRegisterClose = () => setIsRegisterModalOpen(false);
 
     const handleCreateOpen = () => {
-        const username = sessionStorage.getItem("username");
-
-        if (!username) {
+        if (!isLoggedIn || !username) {
             showAlert("You must be logged in to create a thread.", "error");
             return;
         }
@@ -40,9 +38,7 @@ const Header: React.FC = () => {
     const handleClose = () => setIsCreateModalOpen(false);
 
     const handleLogout = () => {
-        sessionStorage.removeItem("username");
-        sessionStorage.removeItem("jwtToken");
-        logout();
+        logout(); // Clear cookies via the Auth context
         showAlert("You have been logged out.", "success");
     };
 

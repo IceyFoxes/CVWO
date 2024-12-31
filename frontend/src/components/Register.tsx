@@ -28,8 +28,7 @@ const Register: React.FC<RegisterProps> = ({ open, onClose }) => {
             await registerUser(username, password);
             showAlert("Registration successful!", "success");
             const data = await loginUser(username, password);
-            sessionStorage.setItem("username", username);
-            sessionStorage.setItem("jwtToken", data.token);
+
             login(username, data.token);
             navigate("/");
             onClose();

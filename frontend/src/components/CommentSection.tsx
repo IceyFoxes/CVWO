@@ -5,7 +5,7 @@ import SearchBar from "./widgets/SearchBar";
 import SortMenu from "./widgets/SortMenu";
 import { postComment } from "../services/threadService";
 import { useAlert } from "./contexts/AlertContext";
-import { useRefresh } from "./contexts/RefreshContext"; // Import RefreshContext
+import { useRefresh } from "./contexts/RefreshContext"; 
 import { inputStyles } from "./shared/Styles";
 import { PrimaryButton } from "./shared/Buttons";
 

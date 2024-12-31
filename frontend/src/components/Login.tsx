@@ -7,7 +7,7 @@ import { useAlert } from "../components/contexts/AlertContext";
 import Loader from "./shared/Loader";
 import { useAuth } from "./contexts/AuthContext";
 
-interface LoginProps {
+interface LoginProps {  
     open: boolean;
     onClose: () => void;
 }
@@ -25,8 +25,6 @@ const Login: React.FC<LoginProps> = ({ open, onClose }) => {
         setLoading(true);
         try {
             const data = await loginUser(username, password);
-            sessionStorage.setItem("username", username);
-            sessionStorage.setItem("jwtToken", data.token);
             showAlert("Login successful!", "success");
             login(username, data.token);
             navigate("/");

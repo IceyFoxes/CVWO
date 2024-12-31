@@ -4,14 +4,14 @@ import CustomModal from "./shared/Modal";
 import { inputStyles } from "./shared/Styles";
 import { updateThread, getThreadById } from "../services/threadService";
 import { useAlert } from "./contexts/AlertContext";
+import { useAuth } from "./contexts/AuthContext";
 
 const UpdateThread: React.FC<{ open: boolean; onClose: () => void; threadId: string }> = ({ open, onClose, threadId }) => {
     const [title, setTitle] = useState<string>("");
     const [content, setContent] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
     const { showAlert } = useAlert();
-
-    const username = sessionStorage.getItem("username");
+    const { username } = useAuth();
 
     useEffect(() => {
         const fetchThreadDetails = async () => {

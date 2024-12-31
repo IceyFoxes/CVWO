@@ -14,8 +14,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [username, setUsername] = useState<string | null>(null);
 
     useEffect(() => {
-        const storedUsername = sessionStorage.getItem("username");
-        const token = sessionStorage.getItem("jwtToken");
+        const storedUsername = localStorage.getItem("username");
+        const token = localStorage.getItem("jwtToken");
         if (storedUsername && token) {
             setUsername(storedUsername);
             setIsLoggedIn(true);
@@ -23,15 +23,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const login = (username: string, token: string) => {
-        sessionStorage.setItem("username", username);
-        sessionStorage.setItem("jwtToken", token);
+        localStorage.setItem("username", username);
+        localStorage.setItem("jwtToken", token);
         setUsername(username);
         setIsLoggedIn(true);
     };
 
     const logout = () => {
-        sessionStorage.removeItem("username");
-        sessionStorage.removeItem("jwtToken");
+        localStorage.removeItem("username");
+        localStorage.removeItem("jwtToken");
         setUsername(null);
         setIsLoggedIn(false);
     };
