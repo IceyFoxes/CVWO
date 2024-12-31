@@ -210,7 +210,7 @@ REACT_APP_API_URL=https://your-backend-url
 
    - Replace `<path-to-backup.dump>` with the path to your backup file.
 
-   - Update the environment variables accordingly.
+   - Update the variables accordingly.
 
    - This will drop existing database objects and recreate them based on the dump file.
 

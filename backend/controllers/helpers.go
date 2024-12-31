@@ -79,7 +79,7 @@ func validateThread(db *sql.DB, isEdit bool, thread *struct {
 		// If it's not an edit, check title uniqueness
 		if !isEdit {
 			var count int
-			err := db.QueryRow("SELECT COUNT(*) FROM threads WHERE title = ?", *thread.Title).Scan(&count)
+			err := db.QueryRow("SELECT COUNT(*) FROM threads WHERE title = $1", *thread.Title).Scan(&count)
 			if err != nil {
 				log.Printf("Error checking title uniqueness: %v", err)
 				errors = append(errors, "Error checking title uniqueness")
