@@ -262,7 +262,7 @@ func UpdateThread(c *gin.Context, db *sql.DB) {
 
 	// Check if it's a comment
 	var existingTitle sql.NullString
-	err = db.QueryRow(`SELECT title FROM threads WHERE id = ?`, threadID).Scan(&existingTitle)
+	err = db.QueryRow(`SELECT title FROM threads WHERE id = $1`, threadID).Scan(&existingTitle)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Thread not found"})
 		return
