@@ -3,9 +3,10 @@ E1406431@u.nus.edu
 
 Description
 
-This is a simple web forum application developed as part of CVWO's winter assignment. The application uses a React frontend and a Go (Gin) backend with SQLite as the database.
+This is a simple web forum application developed as part of CVWO's winter assignment. The application uses a React frontend and a Go (Gin) backend with PostgreSQL as the database.
 
 Deployed here: https://cvwo2025.netlify.app/
+Frontend hosted on Netlify, Backend Go and PostgreSQL DB hosted on Render.
 
 Setup Instructions
 
@@ -14,8 +15,6 @@ Prerequisites
     Node.js (v16 or later) and npm/yarn installed
 
     Go (v1.20 or later) installed
-
-    SQLite installed or included with your system
 
 Backend Setup
 
@@ -49,34 +48,8 @@ Run the frontend
 
 The frontend will be available on http://localhost:3000.
 
-Backup Setup
+Backups
 
-Open Windows Task Scheduler (Win + R, type taskschd.msc, press Enter).
-
-Click Create Task.
-
-In the General tab:
-
-    Provide a name.
-
-    Select "Run whether user is logged on or not."
-
-In the Triggers tab:
-
-    Click New and set the schedule.
-
-In the Actions tab:
-
-    Click New.
-
-    Select Start a Program.
-
-    Browse to the backup.bat file.
-
-In the Conditions tab:
-
-    Uncheck "Start the task only if the computer is on AC power" if running on a server.
-
-Save the task.
+    Auto-backups on Render
 
 If you encounter any issues, feel free to contact me.

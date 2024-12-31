@@ -1,7 +1,7 @@
 import React from "react";
 import { CircularProgress, Box, Typography } from "@mui/material";
 
-const Loader: React.FC<{ message?: string }> = ({ message = "Loading..." }) => {
+const Loader: React.FC<{ message?: string }> = ({ message = "Please be patient ;-; Render Backend will sleep after inactivity... Waking up now..." }) => {
     return (
         <Box
             sx={{

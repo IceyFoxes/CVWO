@@ -2,14 +2,14 @@ package config
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
+	"os"
 
-	_ "modernc.org/sqlite" // SQLite driver
+	_ "github.com/lib/pq"
 )
 
-// initializeDatabase creates tables, enables foreign keys, and seeds initial data
-func initializeDatabase() (*sql.DB, error) {
+// For Local Testing Purposes
+/*func initializeDatabase() (*sql.DB, error) {
 	db, err := sql.Open("sqlite", "./forum.db")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
@@ -110,10 +110,10 @@ func initializeDatabase() (*sql.DB, error) {
 	// Initial seeds
 	seeds := map[string]string{
 		"categories": `
-			INSERT OR IGNORE INTO categories (id, name) VALUES 
+			INSERT OR IGNORE INTO categories (id, name) VALUES
 			(1, 'Featured'),
-			(2, 'Coursework'), 
-			(3, 'Events'), 
+			(2, 'Coursework'),
+			(3, 'Events'),
 			(4, 'Community')
 		`,
 		"admin_user": `
@@ -125,7 +125,7 @@ func initializeDatabase() (*sql.DB, error) {
 			VALUES (1, 'Welcome to the Forum', 'Please follow the rules.', 1, 1, 1, datetime('now'))
 		`,
 		"tags": `
-			INSERT OR IGNORE INTO tags (id, name) VALUES 
+			INSERT OR IGNORE INTO tags (id, name) VALUES
 			(1, 'rules')
 		`,
 	}
@@ -139,11 +139,12 @@ func initializeDatabase() (*sql.DB, error) {
 	}
 
 	return db, nil
-}
+}*/
 
 // ConnectDB initializes the database connection
 func ConnectDB() (*sql.DB, error) {
-	db, err := initializeDatabase() // Call initializeDatabase
+	connStr := os.Getenv("DATABASE_URL")
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Printf("Error initializing the database: %v", err)
 		return nil, err
