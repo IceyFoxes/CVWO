@@ -14,6 +14,7 @@ import { useAlert } from "../components/contexts/AlertContext";
 import RoleManagement from "../components/RoleManagement";
 import { useRefresh } from "../components/contexts/RefreshContext";
 import Layout from "../components/layouts/Layout";
+import { useAuth } from "../components/contexts/AuthContext";
 
 interface UserInfoData {
   joinDate: string;
@@ -22,19 +23,18 @@ interface UserInfoData {
 }
 
 const ProfilePage: React.FC = () => {
-  const { username } = useParams<{ username: string }>();
+  const { usernameProfile } = useParams<{ usernameProfile: string }>();
   const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
   const [userMetrics, setUserMetrics] = useState<Metrics | null>(null);
   const [userScores, setUserScores] = useState<Scores | null>(null);
-  const [isCurrAdmin, setIsCurrAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isBioModalOpen, setIsBioModalOpen] = useState(false); // New state for Bio Modal
   const { refreshFlag } = useRefresh();
   const { showAlert } = useAlert();
-
-  const currUsername = sessionStorage.getItem("username");
+  const { username } = useAuth();
 
   const handleOpenPasswordModal = () => setIsPasswordModalOpen(true);
   const handleClosePasswordModal = () => setIsPasswordModalOpen(false);
@@ -64,16 +64,16 @@ const ProfilePage: React.FC = () => {
       setLoading(true);
       try {
         const [userInfoData, userMetricsData, userScoresData] = await Promise.all([
-          getUserInfo(username ?? ""),
-          getUserMetrics(username ?? ""),
-          getUserScores(username ?? ""),
+          getUserInfo(usernameProfile ?? ""),
+          getUserMetrics(usernameProfile ?? ""),
+          getUserScores(usernameProfile ?? ""),
         ]);
         setUserInfo(userInfoData);
         setUserMetrics(userMetricsData);
         setUserScores(userScoresData);
         
-        const authData = await getAuthorization(currUsername);
-        setIsCurrAdmin(authData);
+        const authData = await getAuthorization(username);
+        setIsAdmin(authData);
 
         setError(null);
       } catch (err) {
@@ -84,7 +84,7 @@ const ProfilePage: React.FC = () => {
     };
 
     fetchData();
-  }, [username, currUsername, refreshFlag]);
+  }, [usernameProfile, username, refreshFlag]);
 
   if (error) return <p style={{ color: "red" }}>{error}</p>;
   if (loading) return <Loader></Loader>;
@@ -95,12 +95,12 @@ const ProfilePage: React.FC = () => {
         {userInfo && (
           <>
             <UserInfo
-              username={username ?? ""}
+              username={usernameProfile ?? ""}
               joinDate={userInfo.joinDate}
               role={userInfo.role}
               bio={userInfo.bio}
             />
-            {currUsername === username && (
+            {username === usernameProfile && (
               <PrimaryButton
                 variant="contained"
                 color="primary"
@@ -125,31 +125,35 @@ const ProfilePage: React.FC = () => {
           </Box>
         )}
 
-        {username && (
+        {usernameProfile && (
           <Box mt={4}>
-            <UserActivity username={username} />
+            <UserActivity username={usernameProfile} />
           </Box>
         )}
 
-        {isCurrAdmin && (
+        {isAdmin && (
           <Box mt={4} mb={4}>
-            <RoleManagement username={username ?? ""} isAdmin={userInfo?.role === "Admin"} />
+            <RoleManagement username={usernameProfile ?? ""} isAdmin={userInfo?.role === "Admin"} />
           </Box>
         )}
         
-        <PrimaryButton variant="contained" color="primary" onClick={handleOpenPasswordModal}>
-          Change Password
-        </PrimaryButton>
-        <PasswordChangeModal
-          open={isPasswordModalOpen}
-          onClose={handleClosePasswordModal}
-          onConfirm={handlePasswordChange}
-        />
+        {username === usernameProfile && (
+          <Box>
+            <PrimaryButton variant="contained" color="primary" onClick={handleOpenPasswordModal}>
+              Change Password
+            </PrimaryButton>
+            <PasswordChangeModal
+              open={isPasswordModalOpen}
+              onClose={handleClosePasswordModal}
+              onConfirm={handlePasswordChange}
+            />
+          </Box>
+        )}
 
         {userInfo && (
           <UpdateUserBio
             open={isBioModalOpen}
-            username={username ?? ""}
+            username={usernameProfile ?? ""}
             currentBio={userInfo.bio}
             onClose={handleCloseBioModal}
             onBioUpdate={handleBioUpdate}

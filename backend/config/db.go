@@ -53,7 +53,7 @@ func InitializeDatabase() (*sql.DB, error) {
 		{"threads", `
 			CREATE TABLE IF NOT EXISTS threads (
 				id SERIAL PRIMARY KEY,
-				title TEXT,
+				title TEXT UNIQUE,
 				content TEXT NOT NULL,
 				category_id INTEGER,
 				tag_id INTEGER,
@@ -134,22 +134,22 @@ func InitializeDatabase() (*sql.DB, error) {
 		"categories": `
 			INSERT INTO categories (name)
 			VALUES ('Featured'), ('Coursework'), ('Events'), ('Community')
-			ON CONFLICT DO NOTHING;
+			ON CONFLICT (name) DO NOTHING;
 		`,
 		"tags": `
 			INSERT INTO tags (name)
-			VALUES ('rules')
-			ON CONFLICT DO NOTHING;
+			VALUES ('Rules')
+			ON CONFLICT (name) DO NOTHING;
 		`,
 		"admin_user": `
-			INSERT INTO users (username, password, bio, is_admin)
-			VALUES ('admin_user', '$2y$10$rEbQNZucaJ3pgh.qq/WzLujs7F97Zm24ODYam41gcSw1cc4DbiWwK', 'I am the king.', TRUE)
-			ON CONFLICT DO NOTHING;
+			INSERT INTO users (id, username, password, bio, is_admin)
+			VALUES (1, 'admin_user', '$2y$10$rEbQNZucaJ3pgh.qq/WzLujs7F97Zm24ODYam41gcSw1cc4DbiWwK', 'I am the king.', TRUE)
+			ON CONFLICT (username) DO NOTHING;
 		`,
 		"welcome_thread": `
 			INSERT INTO threads (title, content, category_id, tag_id, user_id, created_at)
 			VALUES ('Welcome to the Forum', 'Please follow the rules.', 1, 1, 1, CURRENT_TIMESTAMP)
-			ON CONFLICT DO NOTHING;
+			ON CONFLICT (title) DO NOTHING;
 		`,
 	}
 

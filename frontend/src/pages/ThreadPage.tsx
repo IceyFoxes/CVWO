@@ -95,7 +95,7 @@ const ThreadDetails: React.FC = () => {
 
                 <CommentSection
                     threadId={id}
-                    username={sessionStorage.getItem("username")}
+                    username={username}
                 />
 
             </div>

@@ -354,7 +354,7 @@ func CommentThread(c *gin.Context, db *sql.DB) {
 
 	// Get parent depth
 	var parentDepth int
-	err = db.QueryRow(`SELECT depth FROM threads WHERE id = ?`, threadID).Scan(&parentDepth)
+	err = db.QueryRow(`SELECT depth FROM threads WHERE id = $1`, threadID).Scan(&parentDepth)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Thread not found"})
