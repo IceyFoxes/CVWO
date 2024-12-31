@@ -29,7 +29,7 @@ type Classifier struct {
 	Name string `json:"name"`
 }
 
-// Fetch a list of threads filtering for category, tag, or other queries
+// FetchThreads retrieves threads with filtering, sorting, and pagination
 func FetchThreads(db *sql.DB, searchQuery, sortBy string, limit, offset int, tag, category string) ([]Thread, error) {
 	validSortColumns := map[string]string{
 		"created_at": "threads.created_at",
@@ -48,13 +48,16 @@ func FetchThreads(db *sql.DB, searchQuery, sortBy string, limit, offset int, tag
 	var conditions []string
 	var params []interface{}
 	params = append(params, "%"+searchQuery+"%", "%"+searchQuery+"%")
+	paramIndex := 3 // Placeholder index starts from 3 as two params are already used
 	if tag != "" {
-		conditions = append(conditions, "tags.name = ?")
+		conditions = append(conditions, fmt.Sprintf("tags.name = $%d", paramIndex))
 		params = append(params, tag)
+		paramIndex++
 	}
 	if category != "" {
-		conditions = append(conditions, "categories.name = ?")
+		conditions = append(conditions, fmt.Sprintf("categories.name = $%d", paramIndex))
 		params = append(params, category)
+		paramIndex++
 	}
 	conditionsString := ""
 	if len(conditions) > 0 {
@@ -83,12 +86,12 @@ func FetchThreads(db *sql.DB, searchQuery, sortBy string, limit, offset int, tag
 		LEFT JOIN categories ON threads.category_id = categories.id
 		LEFT JOIN tags ON threads.tag_id = tags.id
 		WHERE threads.title IS NOT NULL
-		AND (threads.title LIKE ? OR threads.content LIKE ?)
+		AND (threads.title LIKE $1 OR threads.content LIKE $2)
 		%s
 		GROUP BY threads.id, threads.title, threads.content, threads.created_at, threads.user_id, users.username, categories.name, tags.name
 		ORDER BY %s DESC
-		LIMIT ? OFFSET ?
-	`, conditionsString, sortColumn)
+		LIMIT $%d OFFSET $%d
+	`, conditionsString, sortColumn, paramIndex, paramIndex+1)
 
 	// Add pagination params
 	params = append(params, limit, offset)
@@ -123,7 +126,7 @@ func FetchThreads(db *sql.DB, searchQuery, sortBy string, limit, offset int, tag
 	return threads, nil
 }
 
-// Single Thread (Fetching the Thread content)
+// FetchThreadByID retrieves a thread by its ID
 func FetchThreadByID(db *sql.DB, threadID int) (*Thread, error) {
 	var thread Thread
 
@@ -149,7 +152,7 @@ func FetchThreadByID(db *sql.DB, threadID int) (*Thread, error) {
 	LEFT JOIN threads AS comments ON threads.id = comments.parent_id
 	LEFT JOIN categories ON threads.category_id = categories.id
 	LEFT JOIN tags ON threads.tag_id = tags.id
-	WHERE threads.id = ?
+	WHERE threads.id = $1
 	GROUP BY threads.id, users.username, categories.name, tags.name
 	`
 
@@ -178,8 +181,8 @@ func FetchThreadByID(db *sql.DB, threadID int) (*Thread, error) {
 	return &thread, nil
 }
 
-// Single Thread (Fetching the comments)
-func FetchCommentsByThreadID(db *sql.DB, threadID int, query, sortBy string) ([]Thread, error) {
+// FetchCommentsByThreadID retrieves all comments for a specific thread, with sorting
+func FetchCommentsByThreadID(db *sql.DB, threadID int, searchQuery, sortBy string) ([]Thread, error) {
 	validSortColumns := map[string]string{
 		"created_at": "ct.created_at",
 		"likes":      "likes_count",
@@ -192,45 +195,47 @@ func FetchCommentsByThreadID(db *sql.DB, threadID int, query, sortBy string) ([]
 		sortColumn = "ct.created_at"
 	}
 
-	queryString := fmt.Sprintf(`
-			WITH RECURSIVE CommentTree AS (
-				SELECT 
-					t.*, 
-					categories.name AS category,
-					tags.name AS tag
-				FROM threads t
-				LEFT JOIN categories ON t.category_id = categories.id
-				LEFT JOIN tags ON t.tag_id = tags.id
-				WHERE t.parent_id = ?
-				UNION ALL
-				SELECT 
-					t.*, 
-					COALESCE(ct.category, NULL) AS category,
-					COALESCE(ct.tag, NULL) AS tag
-				FROM threads t
-				INNER JOIN CommentTree ct ON t.parent_id = ct.id
-			)
+	// Construct the recursive query
+	query := fmt.Sprintf(`
+		WITH RECURSIVE CommentTree AS (
 			SELECT 
-				ct.id, 
-				COALESCE(ct.title, NULL) AS title, 
-				ct.content, 
-				users.username AS author, 
-				ct.created_at, 
-				ct.user_id, 
-				ct.parent_id, 
-				(SELECT COUNT(*) FROM likes WHERE likes.thread_id = ct.id) AS likes_count,
-				(SELECT COUNT(*) FROM dislikes WHERE dislikes.thread_id = ct.id) AS dislikes_count,
-				(SELECT COUNT(*) FROM threads WHERE threads.parent_id = ct.id) AS comments_count,
-				ct.depth,
-				ct.category,
-				ct.tag
-			FROM CommentTree ct
-			LEFT JOIN users ON ct.user_id = users.id
-			WHERE ct.id != ? AND (ct.content LIKE ? OR users.username LIKE ?)
-			ORDER BY %s DESC
-		`, sortColumn)
+				t.*, 
+				categories.name AS category,
+				tags.name AS tag
+			FROM threads t
+			LEFT JOIN categories ON t.category_id = categories.id
+			LEFT JOIN tags ON t.tag_id = tags.id
+			WHERE t.parent_id = $1
+			UNION ALL
+			SELECT 
+				t.*, 
+				COALESCE(ct.category, NULL) AS category,
+				COALESCE(ct.tag, NULL) AS tag
+			FROM threads t
+			INNER JOIN CommentTree ct ON t.parent_id = ct.id
+		)
+		SELECT 
+			ct.id, 
+			COALESCE(ct.title, NULL) AS title, 
+			ct.content, 
+			users.username AS author, 
+			ct.created_at, 
+			ct.user_id, 
+			ct.parent_id, 
+			(SELECT COUNT(*) FROM likes WHERE likes.thread_id = ct.id) AS likes_count,
+			(SELECT COUNT(*) FROM dislikes WHERE dislikes.thread_id = ct.id) AS dislikes_count,
+			(SELECT COUNT(*) FROM threads WHERE threads.parent_id = ct.id) AS comments_count,
+			ct.depth,
+			ct.category,
+			ct.tag
+		FROM CommentTree ct
+		LEFT JOIN users ON ct.user_id = users.id
+		WHERE ct.id != $1 AND (ct.content ILIKE $2 OR users.username ILIKE $3)
+		ORDER BY %s DESC
+	`, sortColumn)
 
-	rows, err := db.Query(queryString, threadID, threadID, "%"+query+"%", "%"+query+"%")
+	// Execute the query
+	rows, err := db.Query(query, threadID, "%"+searchQuery+"%", "%"+searchQuery+"%")
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +305,7 @@ func FetchCategories(db *sql.DB) ([]Classifier, error) {
 	return categories, nil
 }
 
-// FetchTags retrieves all tags from the database.
+// FetchTags retrieves all tags from the database
 func FetchTags(db *sql.DB) ([]Classifier, error) {
 	// Query to fetch all tags
 	rows, err := db.Query("SELECT id, name FROM tags")
@@ -327,20 +332,21 @@ func FetchTags(db *sql.DB) ([]Classifier, error) {
 	return tags, nil
 }
 
+// CreateThread creates a new thread in the database
 func CreateThread(db *sql.DB, title *string, content *string, userID int, category, tag string) error {
 	// Resolve or insert the category
 	var categoryID int
 	err := db.QueryRow(`
-        SELECT id FROM categories WHERE name = ?
+        SELECT id FROM categories WHERE name = $1
     `, category).Scan(&categoryID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			res, insertErr := db.Exec(`INSERT INTO categories (name) VALUES (?)`, category)
-			if insertErr != nil {
-				return fmt.Errorf("error inserting new category '%s': %v", category, insertErr)
+			err = db.QueryRow(`
+                INSERT INTO categories (name) VALUES ($1) RETURNING id
+            `, category).Scan(&categoryID)
+			if err != nil {
+				return fmt.Errorf("error inserting new category '%s': %v", category, err)
 			}
-			id, _ := res.LastInsertId()
-			categoryID = int(id)
 		} else {
 			return err
 		}
@@ -349,16 +355,16 @@ func CreateThread(db *sql.DB, title *string, content *string, userID int, catego
 	// Resolve or insert the tag
 	var tagID int
 	err = db.QueryRow(`
-        SELECT id FROM tags WHERE name = ?
+        SELECT id FROM tags WHERE name = $1
     `, tag).Scan(&tagID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			res, insertErr := db.Exec(`INSERT INTO tags (name) VALUES (?)`, tag)
-			if insertErr != nil {
-				return fmt.Errorf("error inserting new tag '%s': %v", tag, insertErr)
+			err = db.QueryRow(`
+                INSERT INTO tags (name) VALUES ($1) RETURNING id
+            `, tag).Scan(&tagID)
+			if err != nil {
+				return fmt.Errorf("error inserting new tag '%s': %v", tag, err)
 			}
-			id, _ := res.LastInsertId()
-			tagID = int(id)
 		} else {
 			return err
 		}
@@ -367,41 +373,45 @@ func CreateThread(db *sql.DB, title *string, content *string, userID int, catego
 	// Insert the thread
 	_, err = db.Exec(`
         INSERT INTO threads (title, content, user_id, category_id, tag_id, created_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'))
+        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
     `, title, content, userID, categoryID, tagID)
 	if err != nil {
 		return fmt.Errorf("error inserting thread: %v", err)
 	}
 
 	return nil
+
 }
 
+// UpdateThread updates a thread's title or content
 func UpdateThread(db *sql.DB, threadID int, title, content *string) error {
 	query := "UPDATE threads SET"
 	params := []interface{}{}
 
 	if title != nil {
-		query += " title = ?,"
+		query += " title = $1,"
 		params = append(params, *title)
 	}
 
 	if content != nil {
-		query += " content = ?,"
+		query += " content = $2,"
 		params = append(params, *content)
 	}
 
-	query = query[:len(query)-1] + " WHERE id = ?"
+	query = strings.TrimSuffix(query, ",") + " WHERE id = $3"
 	params = append(params, threadID)
 
 	_, err := db.Exec(query, params...)
 	return err
 }
 
+// DeleteThread deletes a thread by ID
 func DeleteThread(db *sql.DB, threadID int) error {
-	_, err := db.Exec("DELETE FROM threads WHERE id = ?", threadID)
+	_, err := db.Exec("DELETE FROM threads WHERE id = $1", threadID)
 	return err
 }
 
+// CreateComment adds a new comment to a thread
 func CreateComment(db *sql.DB, content string, userID int, parentID int, depth int) error {
 	// Ensure the depth does not exceed the limit
 	if depth > 3 {
@@ -411,11 +421,12 @@ func CreateComment(db *sql.DB, content string, userID int, parentID int, depth i
 	// Insert the comment
 	_, err := db.Exec(`
 		INSERT INTO threads (content, user_id, parent_id, depth, created_at)
-		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+		VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
 	`, content, userID, parentID, depth)
 	return err
 }
 
+// GetThreadCount retrieves the count of threads based on search criteria
 func GetThreadCount(db *sql.DB, searchQuery, tag, category string) int {
 	query := `
 	SELECT COUNT(*) 
@@ -423,18 +434,20 @@ func GetThreadCount(db *sql.DB, searchQuery, tag, category string) int {
 	LEFT JOIN categories ON threads.category_id = categories.id
 	LEFT JOIN tags ON threads.tag_id = tags.id
 	WHERE threads.title IS NOT NULL 
-	AND (threads.title LIKE ? OR threads.content LIKE ?)
+	AND (threads.title ILIKE $1 OR threads.content ILIKE $2)
 	`
 
 	var conditions []string
 	var params []interface{}
 	params = append(params, "%"+searchQuery+"%", "%"+searchQuery+"%")
+	paramIndex := 3 // Start after the first two params
 	if tag != "" {
-		conditions = append(conditions, "tags.name = ?")
+		conditions = append(conditions, fmt.Sprintf("tags.name = $%d", paramIndex))
 		params = append(params, tag)
+		paramIndex++
 	}
 	if category != "" {
-		conditions = append(conditions, "categories.name = ?")
+		conditions = append(conditions, fmt.Sprintf("categories.name = $%d", paramIndex))
 		params = append(params, category)
 	}
 

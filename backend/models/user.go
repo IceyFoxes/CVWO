@@ -61,10 +61,10 @@ type SavedThread struct {
   (Average Likes per Comment × 5) -
   (Dislikes Received × 2)*/
 
-// Check if the logged-in user is an admin
+// Check if a user is an admin
 func IsAdmin(db *sql.DB, username string) (bool, error) {
 	var isAdmin bool
-	err := db.QueryRow("SELECT is_admin FROM users WHERE username = ?", username).Scan(&isAdmin)
+	err := db.QueryRow("SELECT is_admin FROM users WHERE username = $1", username).Scan(&isAdmin)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil // User does not exist
@@ -78,7 +78,7 @@ func IsAdmin(db *sql.DB, username string) (bool, error) {
 func CheckThreadOwnershipOrAdmin(db *sql.DB, username string, userID int, threadID int) bool {
 	// Check if the thread exists and get the user_id (thread creator)
 	var threadCreatorID int
-	err := db.QueryRow("SELECT user_id FROM threads WHERE id = ?", threadID).Scan(&threadCreatorID)
+	err := db.QueryRow("SELECT user_id FROM threads WHERE id = $1", threadID).Scan(&threadCreatorID)
 	if err != nil {
 		return false // If thread does not exist or there is an error, deny access
 	}
@@ -105,12 +105,12 @@ func GetUserIDFromUsername(db *sql.DB, username string) (int, error) {
 	}
 
 	var userID int
-	err := db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
+	err := db.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, fmt.Errorf("username does not exist")
 		}
-		return 0, fmt.Errorf("failed to fetch user information")
+		return 0, fmt.Errorf("failed to fetch user information: %v", err)
 	}
 
 	return userID, nil
@@ -119,7 +119,7 @@ func GetUserIDFromUsername(db *sql.DB, username string) (int, error) {
 // Check if a username exists in the database
 func CheckUsernameExists(db *sql.DB, username string) (bool, error) {
 	var existingUser string
-	err := db.QueryRow("SELECT username FROM users WHERE username = ?", username).Scan(&existingUser)
+	err := db.QueryRow("SELECT username FROM users WHERE username = $1", username).Scan(&existingUser)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil // Username does not exist
@@ -131,15 +131,16 @@ func CheckUsernameExists(db *sql.DB, username string) (bool, error) {
 
 // Insert a new user into the database
 func CreateUser(db *sql.DB, username string, password string) error {
-	_, err := db.Exec("INSERT INTO users (username, password) VALUES (?, ?)", username, password)
+	_, err := db.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", username, password)
 	return err
 }
 
+// Get the hashed password for a user
 func GetPassword(db *sql.DB, username string) (string, error) {
 	var hashedPassword string
 
 	// Query the database for the hashed password
-	err := db.QueryRow("SELECT password FROM users WHERE username = ?", username).Scan(&hashedPassword)
+	err := db.QueryRow("SELECT password FROM users WHERE username = $1", username).Scan(&hashedPassword)
 	if err != nil {
 		return "", err
 	}
@@ -147,8 +148,9 @@ func GetPassword(db *sql.DB, username string) (string, error) {
 	return hashedPassword, nil
 }
 
+// Update the password for a user
 func UpdatePassword(db *sql.DB, username string, newPassword string) error {
-	_, err := db.Exec("UPDATE users SET password = ? WHERE username = ?", newPassword, username)
+	_, err := db.Exec("UPDATE users SET password = $1 WHERE username = $2", newPassword, username)
 	if err != nil {
 		return err
 	}
@@ -175,7 +177,7 @@ func FetchUserScores(db *sql.DB, username string) (*UserScores, error) {
 				COUNT(CASE WHEN t.parent_id IS NULL THEN 1 END) * 5 +
 				COALESCE(AVG(CASE WHEN t.parent_id IS NULL THEN l.likes END), 0) * 10 +
 				COUNT(CASE WHEN t.parent_id IS NOT NULL THEN 1 END) * 2 +
-				COALESCE(AVG(CASE WHEN t.parent_id IS NOT NULL THEN lc.likes END), 0) * 5 -
+				COALESCE(AVG(CASE WHEN t.parent_id IS NOT NULL THEN lc.likes END), 0) * 5 - 
 				COUNT(d.id) * 2
 			) AS contribution_score
 
@@ -194,7 +196,8 @@ func FetchUserScores(db *sql.DB, username string) (*UserScores, error) {
 		) lc ON t.id = lc.thread_id
 		LEFT JOIN dislikes d ON t.id = d.thread_id
 
-		GROUP BY u.id, u.username;
+		WHERE u.username = $1
+		GROUP BY u.id, u.username
     `
 
 	row := db.QueryRow(query, username)
@@ -234,7 +237,7 @@ func FetchLeaderboard(db *sql.DB) ([]UserScores, error) {
 				COUNT(CASE WHEN t.parent_id IS NULL THEN 1 END) * 5 +
 				COALESCE(AVG(CASE WHEN t.parent_id IS NULL THEN l.likes END), 0) * 10 +
 				COUNT(CASE WHEN t.parent_id IS NOT NULL THEN 1 END) * 2 +
-				COALESCE(AVG(CASE WHEN t.parent_id IS NOT NULL THEN lc.likes END), 0) * 5 -
+				COALESCE(AVG(CASE WHEN t.parent_id IS NOT NULL THEN lc.likes END), 0) * 5 - 
 				COUNT(d.id) * 2
 			) AS contribution_score
 
@@ -254,8 +257,8 @@ func FetchLeaderboard(db *sql.DB) ([]UserScores, error) {
 		LEFT JOIN dislikes d ON t.id = d.thread_id
 
 		GROUP BY u.id, u.username
-		ORDER BY contribution_score DESC; -- Sort by contribution score
-    `
+		ORDER BY contribution_score DESC;
+	`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -274,7 +277,7 @@ func FetchLeaderboard(db *sql.DB) ([]UserScores, error) {
 			&entry.ContributionScore,
 		)
 		if err != nil {
-			log.Println("Error scanning row:", err) // Log the error for each row
+			log.Println("Error scanning row:", err)
 			continue
 		}
 		leaderboard = append(leaderboard, entry)
@@ -291,12 +294,12 @@ func FetchUserInfo(db *sql.DB, username string) (*UserInfo, error) {
 			username,
 			created_at AS join_date,
 			CASE
-				WHEN is_admin = 1 THEN 'Admin'
+				WHEN is_admin = TRUE THEN 'Admin'
 				ELSE 'Regular User'
 			END AS role,
 			bio
 		FROM users
-		WHERE username = ?;
+		WHERE username = $1;
 	`
 
 	row := db.QueryRow(query, username)
@@ -319,24 +322,24 @@ func FetchUserInfo(db *sql.DB, username string) (*UserInfo, error) {
 // Fetch a user's activity metrics
 func FetchUserMetrics(db *sql.DB, username string) (*UserMetrics, error) {
 	query := `
-        SELECT 
-            COUNT(CASE WHEN t.parent_id IS NULL THEN 1 END) AS threads_created,
-            COUNT(CASE WHEN t.parent_id IS NOT NULL THEN 1 END) AS comments_made,
-            COALESCE(SUM(likes_count), 0) AS likes_received,
-            COALESCE(SUM(dislikes_count), 0) AS dislikes_received
-        FROM 
-            users u
-        LEFT JOIN threads t ON u.id = t.user_id
-        LEFT JOIN (
-            SELECT thread_id, COUNT(*) AS likes_count FROM likes GROUP BY thread_id
-        ) l ON t.id = l.thread_id
-        LEFT JOIN (
-            SELECT thread_id, COUNT(*) AS dislikes_count FROM dislikes GROUP BY thread_id
-        ) d ON t.id = d.thread_id
-        WHERE 
-            u.username = ?
-        GROUP BY u.id;
-    `
+		SELECT 
+			COUNT(CASE WHEN t.parent_id IS NULL THEN 1 END) AS threads_created,
+			COUNT(CASE WHEN t.parent_id IS NOT NULL THEN 1 END) AS comments_made,
+			COALESCE(SUM(likes_count), 0) AS likes_received,
+			COALESCE(SUM(dislikes_count), 0) AS dislikes_received
+		FROM 
+			users u
+		LEFT JOIN threads t ON u.id = t.user_id
+		LEFT JOIN (
+			SELECT thread_id, COUNT(*) AS likes_count FROM likes GROUP BY thread_id
+		) l ON t.id = l.thread_id
+		LEFT JOIN (
+			SELECT thread_id, COUNT(*) AS dislikes_count FROM dislikes GROUP BY thread_id
+		) d ON t.id = d.thread_id
+		WHERE 
+			u.username = $1
+		GROUP BY u.id;
+	`
 
 	row := db.QueryRow(query, username)
 
@@ -376,7 +379,7 @@ func FetchUserActivity(db *sql.DB, username string) (*UserActivity, error) {
 		LEFT JOIN users usr ON th.user_id = usr.id
 		LEFT JOIN threads pth ON th.parent_id = pth.id
 		LEFT JOIN users pusr ON pth.user_id = pusr.id
-		WHERE usr.username = ?;
+		WHERE usr.username = $1;
 	`
 
 	rows, err := db.Query(query, username)
@@ -408,7 +411,6 @@ func FetchUserActivity(db *sql.DB, username string) (*UserActivity, error) {
 		}
 	}
 
-	// Check for errors during iteration
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -416,17 +418,18 @@ func FetchUserActivity(db *sql.DB, username string) (*UserActivity, error) {
 	return &UserActivity{Threads: threads, Comments: comments}, nil
 }
 
+// Fetch saved threads for a user
 func FetchUserSavedThreads(db *sql.DB, userID int) ([]SavedThread, error) {
 	query := `
-        SELECT 
-            t.id, t.title, t.created_at
-        FROM 
-            threads t
-        JOIN 
-            saved_threads st ON t.id = st.thread_id
-        WHERE 
-            st.user_id = ?;
-    `
+		SELECT 
+			t.id, t.title, t.created_at
+		FROM 
+			threads t
+		JOIN 
+			saved_threads st ON t.id = st.thread_id
+		WHERE 
+			st.user_id = $1;
+	`
 	rows, err := db.Query(query, userID)
 	if err != nil {
 		return nil, err
@@ -442,24 +445,28 @@ func FetchUserSavedThreads(db *sql.DB, userID int) ([]SavedThread, error) {
 		}
 		savedThreads = append(savedThreads, thread)
 	}
+
 	if savedThreads == nil {
 		savedThreads = []SavedThread{}
 	}
 
-	return savedThreads, err
+	return savedThreads, nil
 }
 
+// Update a user's bio
 func UpdateBio(db *sql.DB, bio string, username string) error {
-	_, err := db.Exec("UPDATE users SET bio = ? WHERE username = ?", bio, username)
+	_, err := db.Exec("UPDATE users SET bio = $1 WHERE username = $2", bio, username)
 	return err
 }
 
+// Promote a user to admin
 func PromoteUser(db *sql.DB, username string) error {
-	_, err := db.Exec("UPDATE users SET is_admin = 1 WHERE username = ?", username)
+	_, err := db.Exec("UPDATE users SET is_admin = TRUE WHERE username = $1", username)
 	return err
 }
 
+// Demote a user from admin
 func DemoteUser(db *sql.DB, username string) error {
-	_, err := db.Exec("UPDATE users SET is_admin = 0 WHERE username = ?", username)
+	_, err := db.Exec("UPDATE users SET is_admin = FALSE WHERE username = $1", username)
 	return err
 }
