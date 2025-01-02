@@ -218,46 +218,34 @@ func GetSaveState(c *gin.Context, db *sql.DB) {
 }
 
 func SaveThread(c *gin.Context, db *sql.DB) {
-	// Log the incoming request
-	log.Println("SaveThread handler called")
-
-	// Extract and validate thread ID
 	threadID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Printf("Invalid thread ID: %v", c.Param("id"))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid thread ID"})
 		return
 	}
-	log.Printf("Thread ID: %d", threadID)
 
-	// Extract and validate username
 	username := c.Query("username")
 	if username == "" {
 		log.Println("Username query parameter is missing")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Username is required"})
 		return
 	}
-	log.Printf("Username: %s", username)
 
-	// Fetch user ID
 	userID, err := models.GetUserIDFromUsername(db, username)
 	if err != nil {
 		log.Printf("Failed to fetch user ID for username '%s': %v", username, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username"})
 		return
 	}
-	log.Printf("User ID: %d", userID)
 
-	// Attempt to save the thread
 	err = models.SaveThread(db, threadID, userID)
 	if err != nil {
 		log.Printf("Failed to save thread (Thread ID: %d, User ID: %d): %v", threadID, userID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save thread"})
 		return
 	}
-	log.Printf("Thread saved successfully (Thread ID: %d, User ID: %d)", threadID, userID)
 
-	// Respond with success
 	c.JSON(http.StatusOK, gin.H{"message": "Thread saved successfully"})
 }
 
