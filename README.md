@@ -162,13 +162,23 @@ REACT_APP_API_URL=https://your-backend-url
 
 ### **Backend Deployment**
 
-1. Deploy the backend to Render:
+1. **Initialize the Database**:
+
+   - Before deploying the backend, configure a database on Render.
+   - Use Render's **PostgreSQL** or another managed database service.
+   - In Render, create a new database and copy the connection string (`DATABASE_URL`).
+
+2. **Deploy the Backend**:
 
    - Push your backend code to a GitHub repository.
-   - Create a new Web Service on Render and connect it to your repository.
-   - Configure the environment variables in Render using the `.env` values.
+   - On Render, create a new Web Service and link it to your repository.
+   - Set up environment variables in Render:
+     - Add the copied `DATABASE_URL` from the database service.
+     - Include other environment variables from your `.env` file.
 
-2. Update the `DATABASE_URL` with the connection string provided by Render.
+3. **Connect Backend to Database**:
+   - Ensure the backend reads the `DATABASE_URL` from the environment variables.
+   - Update the backend configuration to use this connection string during initialization.
 
 ### **Frontend Deployment**
 
