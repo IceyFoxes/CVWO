@@ -31,7 +31,7 @@ const ContentItem: React.FC<ContentItemProps> = ({ id, title, content, author, p
           {title}
         </Typography>
       )}
-        <Divider sx={{ mt: 2 }} />
+        <br></br>
         
         {/* Content */}
         <Typography

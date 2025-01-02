@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { TextField, Typography } from "@mui/material";
-import CustomModal from "./shared/Modal";
+import CustomModal from "../shared/Modal";
 
 interface PasswordChangeModalProps {
   open: boolean;

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext } from "react";
 import { AppBar, Toolbar, Typography, IconButton, Box } from "@mui/material";
 import { Link } from "react-router-dom";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
@@ -6,64 +6,52 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import { ColorModeContext } from "../../theme/ColorMode";
 import { headerStyles } from "../shared/Styles";
 import { LinkButton, PrimaryButton } from "../shared/Buttons";
-import Login from "../Login";
-import Register from "../Register";
+import Login from "../modals/Login";
+import Register from "../modals/Register";
+import CreateThread from "../modals/CreateThread";
 import { useAlert } from "../contexts/AlertContext";
-import CreateThread from "../CreateThread";
 import { useAuth } from "../contexts/AuthContext";
+import { useModal } from "../hooks/useModal"
 
 const Header: React.FC = () => {
     const { mode, toggleColorMode } = useContext(ColorModeContext);
     const { showAlert } = useAlert();
-    const [ isLoginModalOpen, setIsLoginModalOpen ] = useState(false);
-    const [ isRegisterModalOpen, setIsRegisterModalOpen ] = useState(false);
-    const [ isCreateModalOpen, setIsCreateModalOpen ] = useState(false);
     const { isLoggedIn, username, logout } = useAuth();
-
-    const handleLoginOpen = () => setIsLoginModalOpen(true);
-    const handleLoginClose = () => setIsLoginModalOpen(false);
-
-    const handleRegisterOpen = () => setIsRegisterModalOpen(true);
-    const handleRegisterClose = () => setIsRegisterModalOpen(false);
+    const loginModal = useModal();
+    const registerModal = useModal();
+    const createModal = useModal();
 
     const handleCreateOpen = () => {
         if (!isLoggedIn || !username) {
             showAlert("You must be logged in to create a thread.", "error");
             return;
         }
-
-        setIsCreateModalOpen(true);
+        createModal.openModal();
     };
 
-    const handleClose = () => setIsCreateModalOpen(false);
-
     const handleLogout = () => {
-        logout(); // Clear cookies via the Auth context
+        logout();
         showAlert("You have been logged out.", "success");
     };
 
     return (
         <AppBar position="static" color="primary">
             <Toolbar>
-                {/* Logo / Title */}
                 <Typography variant="h6" sx={headerStyles}>
                     <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>
-                        Town Hall
+                        School Forum
                     </Link>
                 </Typography>
-                
-                {/* Create Thread */}
+
                 <Box sx={{ marginTop: 4, textAlign: "center" }}>
                     <PrimaryButton onClick={handleCreateOpen}>Create New Thread</PrimaryButton>
-                    <CreateThread open={isCreateModalOpen} onClose={handleClose} />
+                    <CreateThread open={createModal.isOpen} onClose={createModal.closeModal} />
                 </Box>
 
-                {/* Light/Dark Mode Toggle */}
                 <IconButton color="inherit" onClick={toggleColorMode} sx={headerStyles}>
                     {mode === "dark" ? <DarkModeIcon /> : <LightModeIcon />}
                 </IconButton>
 
-                {/* User Authentication */}
                 {isLoggedIn ? (
                     <Box sx={headerStyles}>
                         <Typography variant="body2" gutterBottom sx={{ marginRight: 2 }}>
@@ -75,15 +63,15 @@ const Header: React.FC = () => {
                     </Box>
                 ) : (
                     <>
-                        <PrimaryButton onClick={handleLoginOpen} sx={headerStyles}>
+                        <PrimaryButton onClick={loginModal.openModal} sx={headerStyles}>
                             Login
                         </PrimaryButton>
-                        <Login open={isLoginModalOpen} onClose={handleLoginClose} />
+                        <Login open={loginModal.isOpen} onClose={loginModal.closeModal} />
 
-                        <PrimaryButton onClick={handleRegisterOpen} sx={headerStyles}>
+                        <PrimaryButton onClick={registerModal.openModal} sx={headerStyles}>
                             Register
                         </PrimaryButton>
-                        <Register open={isRegisterModalOpen} onClose={handleRegisterClose} />
+                        <Register open={registerModal.isOpen} onClose={registerModal.closeModal} />
                     </>
                 )}
             </Toolbar>
@@ -92,4 +80,3 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-

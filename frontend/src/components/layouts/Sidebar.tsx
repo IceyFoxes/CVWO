@@ -2,42 +2,39 @@ import React, { useState, useEffect } from "react";
 import { List, ListItemButton, ListItemText, Divider, Typography, Box } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
 import { fetchCategories } from "../../services/threadService";
-import { listItemStyles, sidebarContainer } from "../shared/Styles";
 import { getUserSavedThreads } from "../../services/userService";
 import { useRefresh } from "../contexts/RefreshContext";
 import { useAuth } from "../contexts/AuthContext";
+import { sidebarContainer, listItemStyles } from "../shared/Styles";
 
 interface Category {
     id: number;
     name: string;
 }
+
 interface SavedThread {
     id: number;
     title: string;
-    createdAt: string;
 }
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]); // Explicit type for categories
+    const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]); // Explicit type for savedThreads
     const { refreshFlag } = useRefresh();
     const { isLoggedIn, username } = useAuth();
 
-    // Fetch categories on mount
     useEffect(() => {
         const fetchData = async () => {
             try {
-                if (isLoggedIn) {
-                    const savedThreadsData = await getUserSavedThreads(username ?? "");
-                    setSavedThreads(savedThreadsData.savedThreads);
-                }
-                
-                const categoriesData = await fetchCategories();
-                setCategories(categoriesData.categories);
-                
+                const [categoriesData, savedThreadsData] = await Promise.all([
+                    fetchCategories(),
+                    isLoggedIn ? getUserSavedThreads(username ?? "") : Promise.resolve({ savedThreads: [] }),
+                ]);
+                setCategories(categoriesData.categories || []);
+                setSavedThreads(savedThreadsData.savedThreads || []);
             } catch (error) {
-                console.error("Failed to fetch categories:", error);
+                console.error("Failed to fetch sidebar data:", error);
             }
         };
 
@@ -51,7 +48,6 @@ const Sidebar: React.FC = () => {
             </Typography>
 
             <List>
-                {/* Static Links */}
                 <ListItemButton
                     component={Link as React.ElementType}
                     to="/"
@@ -73,7 +69,6 @@ const Sidebar: React.FC = () => {
 
                 <Divider sx={{ my: 2 }} />
 
-                {/* Dynamic Categories */}
                 <Typography variant="h6" gutterBottom>
                     Categories
                 </Typography>
@@ -89,7 +84,6 @@ const Sidebar: React.FC = () => {
                     </ListItemButton>
                 ))}
 
-                {/* Dynamic Saved Threads */}
                 <Typography variant="h6" gutterBottom>
                     Saved Threads
                 </Typography>
@@ -104,8 +98,8 @@ const Sidebar: React.FC = () => {
                                 to={`/threads/${thread.id}`}
                                 sx={listItemStyles}
                             >
-                            <ListItemText primary={thread.title} />
-                        </ListItemButton>
+                                <ListItemText primary={thread.title} />
+                            </ListItemButton>
                         ))}
                     </List>
                 )}

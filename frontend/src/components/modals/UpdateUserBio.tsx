@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import CustomModal from "./shared/Modal";
+import CustomModal from "../shared/Modal";
 import { TextField } from "@mui/material";
-import { updateUserBio } from "../services/userService"; 
-import { useAlert } from "./contexts/AlertContext";
+import { updateUserBio } from "../../services/userService"; 
+import { useAlert } from "../contexts/AlertContext";
 
 interface UpdateUserBioProps {
     open: boolean;

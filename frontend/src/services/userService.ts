@@ -1,64 +1,93 @@
-import axiosInstance from "../axiosConfig";
+import { apiCall } from "./apiUtil";
 
-export const registerUser = async (username: string, password: string) => {
-    const response = await axiosInstance.post('/users', { username, password });
-    return response.data;
-};
-
-export const loginUser = async (username: string, password: string) => {
-    const response = await axiosInstance.post('/users/login', { username, password });
-    return response.data;
-};
-
-export const getAuthorization = async (username: string | null) => {
-    const response = await axiosInstance.get(`/users/${username}/authorize`)
-    return response.data;
-};
-
-export const getUserScores = async (username: string | null) => {
-    const response = await axiosInstance.get(`/users/${username}/scores`)
-    return response.data;
-};
-
-export const getUserInfo = async (username: string) => {
-    const response = await axiosInstance.get(`/users/${username}/info`)
-    return response.data;
-};
-
-export const getUserMetrics = async (username: string) => {
-    const response = await axiosInstance.get(`/users/${username}/metrics`);
-    return response.data;
-};
-
-export const getUserActivity = async (username: string) => {
-    const response = await axiosInstance.get(`/users/${username}/activity`);
-    return response.data;
-};
-
-export const getUserSavedThreads = async (username: string) => {
-    const response = await axiosInstance.get(`/users/${username}/saved`);
-    return response.data;
-};
-
-export const updatePassword = async ( username: string, currentPassword: string, newPassword: string) => {
-    const response = await axiosInstance.post(`/users/${username}/password`, {
-      currentPassword,
-      newPassword,
+export const registerUser = async (username: string, password: string): Promise<any> => {
+    return apiCall({
+        url: "/users",
+        method: "POST",
+        data: { username, password },
     });
-    return response.data;
 };
 
-export const updateUserBio = async (username: string, bio: string) => {
-    const response = await axiosInstance.put(`/users/${username}/bio`, { bio });
-    return response.data;
+export const loginUser = async (username: string, password: string): Promise<any> => {
+    return apiCall({
+        url: "/users/login",
+        method: "POST",
+        data: { username, password },
+    });
 };
 
-export const promoteUser = async (username: string) => {
-    const response = await axiosInstance.put(`/users/${username}/promote`);
-    return response.data;
+export const getAuthorization = async (username: string | null): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/authorize`,
+        method: "GET",
+    });
 };
 
-export const demoteUser = async (username: string) => {
-    const response = await axiosInstance.put(`/users/${username}/demote`);
-    return response.data;
+export const getUserScores = async (username: string | null): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/scores`,
+        method: "GET",
+    });
+};
+
+export const getUserInfo = async (username: string): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/info`,
+        method: "GET",
+    });
+};
+
+export const getUserMetrics = async (username: string): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/metrics`,
+        method: "GET",
+    });
+};
+
+export const getUserActivity = async (username: string): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/activity`,
+        method: "GET",
+    });
+};
+
+export const getUserSavedThreads = async (username: string): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/saved`,
+        method: "GET",
+    });
+};
+
+export const updatePassword = async (
+    username: string,
+    currentPassword: string,
+    newPassword: string
+): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/password`,
+        method: "POST",
+        data: { currentPassword, newPassword },
+    });
+};
+
+export const updateUserBio = async (username: string, bio: string): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/bio`,
+        method: "PUT",
+        data: { bio },
+    });
+};
+
+export const promoteUser = async (username: string): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/promote`,
+        method: "PUT",
+    });
+};
+
+export const demoteUser = async (username: string): Promise<any> => {
+    return apiCall({
+        url: `/users/${username}/demote`,
+        method: "PUT",
+    });
 };

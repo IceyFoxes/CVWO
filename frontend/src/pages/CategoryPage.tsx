@@ -1,30 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { getThreads } from "../services/threadService";
 import { Box, Typography } from "@mui/material";
-import TagGroup from "../components/TagGroup";
-import TagFilter from "../components/TagFilter";
+import { useParams } from "react-router-dom";
 import SearchBar from "../components/widgets/SearchBar";
+import Pagination from "../components/widgets/Pagination";
+import SortMenu, { SortField } from "../components/widgets/SortMenu";
+import CustomCard from "../components/shared/Card";
 import Loader from "../components/shared/Loader";
 import Layout from "../components/layouts/Layout";
-import { Thread } from "../components/CategoryGroup";
+import { getThreads } from "../services/threadService";
+import { Thread } from "./HomePage";
 
 const CategoryPage: React.FC = () => {
     const { category } = useParams<{ category: string }>();
-    const [threads, setThreads] = useState<Thread[]>([]);
-    const [filteredThreads, setFilteredThreads] = useState<Thread[]>([]);
-    const [tags, setTags] = useState<string[]>([]);
-    const [selectedTag, setSelectedTag] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState<string>(""); // State for search query
+    const [tagGroups, setTagGroups] = useState<Record<string, Thread[]>>({});
+    const [searchQuery, setSearchQuery] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [paginationState, setPaginationState] = useState<
+        Record<string, { page: number; sortBy: string }>
+    >({});
 
-    const extractTags = (threads: Thread[]): string[] => {
-        const uniqueTags = new Set<string>();
-        threads.forEach((thread) => {
-            if (thread.tag) uniqueTags.add(thread.tag);
-        });
-        return Array.from(uniqueTags);
+    const itemsPerPage = 5;
+
+    const groupThreadsByTag = (threads: Thread[]): Record<string, Thread[]> => {
+        return threads.reduce<Record<string, Thread[]>>((acc, thread) => {
+            const tag = thread.tag ?? "Untagged";
+            if (!acc[tag]) acc[tag] = [];
+            acc[tag].push(thread);
+            return acc;
+        }, {});
     };
 
     useEffect(() => {
@@ -38,9 +42,18 @@ const CategoryPage: React.FC = () => {
                     limit: 50,
                     category: category ?? "",
                 });
-                setThreads(response.threads || []);
-                setTags(extractTags(response.threads || []));
-                setFilteredThreads(response.threads || []); // Initially show all threads
+                const fetchedThreads = response.threads || [];
+                setTagGroups(groupThreadsByTag(fetchedThreads));
+
+                // Initialize pagination state for each tag
+                const initialPaginationState = Object.keys(groupThreadsByTag(fetchedThreads)).reduce(
+                    (state, tag) => ({
+                        ...state,
+                        [tag]: { page: 1, sortBy: "createdAt" },
+                    }),
+                    {}
+                );
+                setPaginationState(initialPaginationState);
             } catch (err) {
                 console.error("Failed to fetch threads:", err);
                 setError("Failed to fetch threads. Please try again.");
@@ -52,24 +65,41 @@ const CategoryPage: React.FC = () => {
         fetchThreads();
     }, [category]);
 
-    useEffect(() => {
-        // Apply tag and search filtering logic
-        let result = threads;
+    const handleSortChange = (tag: string, sortBy: string) => {
+        setPaginationState((prev) => ({
+            ...prev,
+            [tag]: { ...prev[tag], sortBy },
+        }));
+    };
 
-        if (selectedTag) {
-            result = result.filter((thread) => thread.tag === selectedTag);
-        }
+    const handlePageChange = (tag: string, page: number) => {
+        setPaginationState((prev) => ({
+            ...prev,
+            [tag]: { ...prev[tag], page },
+        }));
+    };
 
-        if (searchQuery) {
-            result = result.filter(
-                (thread) =>
-                    thread.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    thread.content.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
+    const sortThreads = (threads: Thread[], sortBy: string) => {
+        return [...threads].sort((a, b) => {
+            switch (sortBy) {
+                case "createdAt":
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                case "likes":
+                    return b.likesCount - a.likesCount;
+                case "dislikes":
+                    return b.dislikesCount - a.dislikesCount;
+                case "comments":
+                    return b.commentsCount - a.commentsCount;
+                default:
+                    return 0;
+            }
+        });
+    };
 
-        setFilteredThreads(result);
-    }, [selectedTag, searchQuery, threads]);
+    const paginateThreads = (threads: Thread[], page: number) => {
+        const startIndex = (page - 1) * itemsPerPage;
+        return threads.slice(startIndex, startIndex + itemsPerPage);
+    };
 
     return (
         <Layout>
@@ -86,36 +116,55 @@ const CategoryPage: React.FC = () => {
                         <Typography variant="h4" gutterBottom>
                             {category ?? "All Threads"}
                         </Typography>
-                        {/* Search Bar */}
-                        <SearchBar
-                            searchQuery={searchQuery}
-                            onSearchChange={(query: string) => setSearchQuery(query)}
-                        />
-                        {/* Tag Filter */}
-                        <TagFilter
-                            tags={tags}
-                            selectedTag={selectedTag}
-                            onFilterChange={(newTag) => setSelectedTag(newTag)}
-                        />
-                        {/* Display Threads by Tag */}
-                        {selectedTag
-                            ? // Show threads for the selected tag only
-                              filteredThreads.length > 0 && (
-                                  <TagGroup
-                                      tag={selectedTag}
-                                      threads={filteredThreads}
-                                  />
-                              )
-                            : // Show all threads grouped by tag
-                              tags.map((tag) => (
-                                  <TagGroup
-                                      key={tag}
-                                      tag={tag}
-                                      threads={filteredThreads.filter(
-                                          (thread) => thread.tag === tag
-                                      )}
-                                  />
-                              ))}
+                        <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+                        {Object.entries(tagGroups).map(([tag, threads]) => {
+                            const { page, sortBy } = paginationState[tag] || { page: 1, sortBy: "createdAt" };
+                            const filteredThreads = threads.filter(
+                                (thread) =>
+                                    thread.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    thread.content.toLowerCase().includes(searchQuery.toLowerCase())
+                            );
+                            const sortedThreads = sortThreads(filteredThreads, sortBy);
+                            const paginatedThreads = paginateThreads(sortedThreads, page);
+
+                            return (
+                                <Box key={tag} sx={{ marginBottom: 4 }}>
+                                    <Typography variant="h5" gutterBottom>
+                                        {tag}
+                                    </Typography>
+                                    <SortMenu
+                                        sortBy={sortBy as SortField}
+                                        onSortChange={(field) => handleSortChange(tag, field)}
+                                    />
+                                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                                        {paginatedThreads.map((thread) => (
+                                            <CustomCard
+                                                key={thread.id}
+                                                title={thread.title ?? "Untitled Thread"}
+                                                content={
+                                                    <Typography variant="body2">
+                                                        {thread.content.length > 100
+                                                            ? `${thread.content.substring(0, 100)}...`
+                                                            : thread.content}
+                                                    </Typography>
+                                                }
+                                                linkTo={`/threads/${thread.id}`}
+                                                metadata={{
+                                                    author: thread.author,
+                                                    likes: thread.likesCount,
+                                                    comments: thread.commentsCount,
+                                                }}
+                                            />
+                                        ))}
+                                    </Box>
+                                    <Pagination
+                                        currentPage={page}
+                                        totalPages={Math.ceil(filteredThreads.length / itemsPerPage)}
+                                        onPageChange={(newPage) => handlePageChange(tag, newPage)}
+                                    />
+                                </Box>
+                            );
+                        })}
                     </>
                 )}
             </Box>
@@ -124,3 +173,5 @@ const CategoryPage: React.FC = () => {
 };
 
 export default CategoryPage;
+
+ 

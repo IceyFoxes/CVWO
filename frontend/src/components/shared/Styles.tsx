@@ -15,14 +15,14 @@ export const buttonStyles: SxProps<Theme> = {
 };
 
 export const cardStyles: SxProps<Theme> = {
-    padding: 2,
     borderRadius: 2,
     boxShadow: 3,
-    transition: "all 0.3s ease",
+    transition: "transform 0.3s ease, box-shadow 0.3s ease",
     "&:hover": {
         transform: "scale(1.02)",
         boxShadow: 6,
     },
+    backgroundColor: "background.paper",
 };
 
 // For Text fields

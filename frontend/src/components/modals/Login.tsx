@@ -1,19 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser, registerUser } from "../services/userService";
-import { TextField } from "@mui/material";
-import CustomModal from "../components/shared/Modal";
-import { useAlert } from "../components/contexts/AlertContext";
-import Loader from "./shared/Loader";
-import { PrimaryButton } from "./shared/Buttons";
-import { useAuth } from "./contexts/AuthContext";
+import { loginUser } from "../../services/userService";
+import { TextField, Button } from "@mui/material";
+import CustomModal from "../shared/Modal";
+import { useAlert } from "../contexts/AlertContext";
+import Loader from "../shared/Loader";
+import { useAuth } from "../contexts/AuthContext";
 
-interface RegisterProps {
+interface LoginProps {  
     open: boolean;
     onClose: () => void;
 }
 
-const Register: React.FC<RegisterProps> = ({ open, onClose }) => {
+const Login: React.FC<LoginProps> = ({ open, onClose }) => {
     const [username, setUsername] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
@@ -21,14 +20,12 @@ const Register: React.FC<RegisterProps> = ({ open, onClose }) => {
     const { showAlert } = useAlert();
     const { login } = useAuth();
 
-    const handleRegister = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
-            await registerUser(username, password);
-            showAlert("Registration successful!", "success");
             const data = await loginUser(username, password);
-
+            showAlert("Login successful!", "success");
             login(username, data.token);
             navigate("/");
             onClose();
@@ -40,8 +37,8 @@ const Register: React.FC<RegisterProps> = ({ open, onClose }) => {
     };
 
     return (
-        <CustomModal open={open} onClose={onClose} title="Register">
-            <form onSubmit={handleRegister}>
+        <CustomModal open={open} onClose={onClose} title="Login">
+            <form onSubmit={handleLogin}>
                 <TextField
                     label="Username"
                     value={username}
@@ -59,17 +56,16 @@ const Register: React.FC<RegisterProps> = ({ open, onClose }) => {
                     fullWidth
                     margin="normal"
                 />
-                {loading ? (
-                    <Loader></Loader>
-                ) : (
-                    <PrimaryButton type="submit" variant="contained" color="primary" fullWidth>
-                        Register
-                    </PrimaryButton>
+                {loading ? (<Loader></Loader>) 
+                    : (
+                    <Button type="submit" variant="contained" color="primary" fullWidth>
+                        Login
+                    </Button>
                 )}
             </form>
         </CustomModal>
     );
 };
 
-export default Register;
+export default Login;
 

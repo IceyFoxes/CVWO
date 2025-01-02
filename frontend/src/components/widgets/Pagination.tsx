@@ -1,6 +1,5 @@
 import React from "react";
-import { Box } from "@mui/material";
-import { PrimaryButton, OutlinedButton } from "../shared/Buttons";
+import { Box, Button } from "@mui/material";
 
 interface PaginationProps {
     currentPage: number;
@@ -9,25 +8,32 @@ interface PaginationProps {
 }
 
 const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
-    const handlePrevious = () => {
-        if (currentPage > 1) onPageChange(currentPage - 1);
-    };
-
-    const handleNext = () => {
-        if (currentPage < totalPages) onPageChange(currentPage + 1);
+    const renderPageNumbers = () => {
+        const pages = [];
+        for (let i = 1; i <= totalPages; i++) {
+            pages.push(
+                <Button
+                    key={i}
+                    onClick={() => onPageChange(i)}
+                    disabled={i === currentPage}
+                    sx={{ marginX: 0.5 }}
+                >
+                    {i}
+                </Button>
+            );
+        }
+        return pages;
     };
 
     return (
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 2, marginTop: 2 }}>
-            <PrimaryButton onClick={handlePrevious} disabled={currentPage === 1}>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 2, marginTop: 2 }}>
+            <Button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
                 Previous
-            </PrimaryButton>
-            <OutlinedButton disabled>
-                Page {currentPage} of {totalPages}
-            </OutlinedButton>
-            <PrimaryButton onClick={handleNext} disabled={currentPage === totalPages}>
+            </Button>
+            {renderPageNumbers()}
+            <Button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>
                 Next
-            </PrimaryButton>
+            </Button>
         </Box>
     );
 };

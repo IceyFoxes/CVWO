@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Box, TextField } from "@mui/material";
-import CustomModal from "./shared/Modal";
-import { inputStyles } from "./shared/Styles";
-import { updateThread, getThreadById } from "../services/threadService";
-import { useAlert } from "./contexts/AlertContext";
-import { useAuth } from "./contexts/AuthContext";
+import CustomModal from "../shared/Modal";
+import { inputStyles } from "../shared/Styles";
+import { updateThread, getThreadById } from "../../services/threadService";
+import { useAlert } from "../contexts/AlertContext";
+import { useAuth } from "../contexts/AuthContext";
 
 const UpdateThread: React.FC<{ open: boolean; onClose: () => void; threadId: string }> = ({ open, onClose, threadId }) => {
     const [title, setTitle] = useState<string>("");

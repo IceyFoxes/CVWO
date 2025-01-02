@@ -20,6 +20,8 @@ This is a simple web forum application developed as part of CVWO's winter assign
 - Profile page with biography, metrics and scores
 - Leaderboard of contribution scores (TBU)
 - Backup automation
+- Images/Animations (TBU)
+- Rank System (TBU)
 
 ---
 

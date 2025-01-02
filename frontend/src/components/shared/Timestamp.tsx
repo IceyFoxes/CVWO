@@ -7,10 +7,12 @@ interface TimestampProps {
 
 const Timestamp: React.FC<TimestampProps> = ({ date }) => {
     const getRelativeTime = (timestamp: string) => {
-        const now = new Date();
-        const targetDate = new Date(timestamp);
+        const now = new Date(); 
+        const targetDate = new Date(timestamp); 
 
-        const diffInSeconds = Math.floor((now.getTime() - targetDate.getTime()) / 1000);
+        const timezoneOffsetInSeconds = now.getTimezoneOffset() * 60;
+        const nowUTCInSeconds = Math.floor(now.getTime() / 1000) - timezoneOffsetInSeconds;
+        const diffInSeconds = nowUTCInSeconds - Math.floor(targetDate.getTime() / 1000);
 
         const thresholds = {
             year: 60 * 60 * 24 * 365,
@@ -40,4 +42,3 @@ const Timestamp: React.FC<TimestampProps> = ({ date }) => {
 };
 
 export default Timestamp;
-

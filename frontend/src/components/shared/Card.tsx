@@ -1,58 +1,134 @@
-import React from 'react';
-import { Card, CardContent, CardActions, Typography, Button, Chip, Box } from '@mui/material';
-import { Link } from 'react-router-dom';
-import { cardStyles } from './Styles';
-import { Thread } from '../CategoryGroup';
+import React from "react";
+import { Card, CardContent, CardActions, Typography, Box } from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
+import { cardStyles } from "./Styles";
+import { PrimaryButton } from "./Buttons";
+import Timestamp from "./Timestamp";
 
 interface CustomCardProps {
-    thread: Thread;
+    title?: React.ReactNode;
+    content: React.ReactNode;
+    footer?: React.ReactNode;
+    children?: React.ReactNode;
+    linkTo: string;
+    metadata?: {
+        author?: string;
+        likes?: number;
+        comments?: number;
+        dislikes?: number;
+        createdAt?: string;
+        isMaxDepth?: boolean;
+    };
 }
 
-const CustomCard: React.FC<CustomCardProps> = ({ thread }) => {
+const CustomCard: React.FC<CustomCardProps> = ({ title, content, footer, linkTo, metadata, children }) => {
+    const navigate = useNavigate();
     return (
-        <Card sx={{ ...(cardStyles as any) }}>
-            <CardContent>
-                {/* Thread Title */}
-                <Typography variant="h6" component="div" gutterBottom>
-                    {thread.title}
-                </Typography>
-
-                {/* Thread Content Preview */}
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {thread.content.length > 100
-                        ? `${thread.content.substring(0, 100)}...`
-                        : thread.content}
-                </Typography>
-
-                {/* Thread Author */}
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Posted by {" "}
-                    <Link
-                        to={`/profile/${thread.author}`} 
-                        style={{ textDecoration: "none", color: "inherit" }}
+        <Card
+            sx={{
+                ...cardStyles,
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                cursor: "pointer",
+                "&:hover": {
+                    boxShadow: 10,
+                },
+            }}
+        >
+            {title && (
+                <Box
+                    sx={{
+                        padding: 2,
+                        backgroundColor: "primary.light",
+                        borderBottom: "1px solid #ddd",
+                    }}
+                >
+                    <Typography variant="h6" sx={{ fontWeight: "bold", color: "primary.contrastText" }}>
+                        {title}
+                    </Typography>
+                </Box>
+            )}
+            <CardContent
+                sx={{
+                    flexGrow: 1,
+                    padding: 3,
+                    "&:last-child": { paddingBottom: 3 },
+                }}
+            >
+                {content}
+                {metadata && (
+                    <>
+                        {metadata.author && (
+                            <Typography
+                                variant="caption"
+                                display="block"
+                                sx={{
+                                    pointerEvents: "auto", // Allow interaction for author link
+                                }}
+                                onClick={(e) => e.stopPropagation()} // Prevent card click propagation
+                            >
+                                By:{" "}
+                                <Link
+                                    to={`/profile/${metadata.author}`}
+                                    style={{
+                                        textDecoration: "none",
+                                        color: "inherit",
+                                    }}
+                                >
+                                    {metadata.author}
+                                </Link>
+                            </Typography>
+                        )}
+                        {metadata.likes !== undefined && (
+                            <Typography variant="caption" display="block">
+                                Likes: {metadata.likes}
+                            </Typography>
+                        )}
+                        {metadata.dislikes !== undefined && (
+                            <Typography variant="caption" display="block">
+                                Dislikes: {metadata.dislikes}
+                            </Typography>
+                        )}
+                        {metadata.comments !== undefined && (
+                            <Typography variant="caption" display="block">
+                                Comments: {metadata.comments}
+                            </Typography>
+                        )}
+                        {metadata.createdAt && (
+                            <Typography variant="caption" display="block">
+                                Created: <Timestamp date={metadata.createdAt}></Timestamp>
+                            </Typography>
+                        )}
+                    </>
+                )}
+                {!metadata?.isMaxDepth && (<CardActions>
+                    <PrimaryButton
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(linkTo);
+                        }}
                     >
-                        {thread.author}
-                    </Link>
-                </Typography>
-
-                {/* Likes, Comments */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 1 }}>
-                    <Typography variant="caption">Likes: {thread.likesCount}</Typography>
-                    <Typography variant="caption">Comments: {thread.commentsCount}</Typography>
-                </Box>
-
-                {/* Tags */}
-                <Box sx={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {thread.tag && <Chip key={thread.tag} label={thread.tag} size="small" />}
-                </Box>
+                        View Details
+                    </PrimaryButton>
+                </CardActions>
+                )} 
             </CardContent>
-
-            <CardActions>
-                {/* View Thread Button */}
-                <Button size="small" component={Link} to={`/threads/${thread.id}`}>
-                    View Details
-                </Button>
-            </CardActions>
+            
+            {children && <Box sx={{ padding: 2 }}>{children}</Box>}
+            
+            {footer && (
+                <CardActions
+                    sx={{
+                        padding: 2,
+                        backgroundColor: "background.default",
+                        borderTop: "1px solid #ddd",
+                        justifyContent: "flex-end",
+                    }}
+                >
+                    {footer}
+                </CardActions>
+            )}
         </Card>
     );
 };

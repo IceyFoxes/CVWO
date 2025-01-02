@@ -1,61 +1,81 @@
-import axiosInstance from "../axiosConfig";
+import { apiCall } from "./apiUtil";
 
-export const getLikesCount = async (threadId: string) => {
-    const response = await axiosInstance.get(`/threads/${threadId}/likes`);
-    return response.data.likes_count || 0;
-};
-
-export const getDislikesCount = async (threadId: string) => {
-    const response = await axiosInstance.get(`/threads/${threadId}/dislikes`);
-    return response.data.dislikes_count || 0;
-};
-
-export const getLikeState = async (threadId: string, username: string) => {
-    const response = await axiosInstance.get(`/threads/${threadId}/likestate`, {
-        params: { username },
+export const getLikesCount = async (threadId: string): Promise<number> => {
+    const data = await apiCall<{ likes_count: number }>({
+        url: `/threads/${threadId}/likes`,
+        method: "GET",
     });
-    return response.data;
+    return data.likes_count || 0;
 };
 
-export const getSaveState = async (threadId: string, username: string) => {
-    const response = await axiosInstance.get(`/threads/${threadId}/savestate`, {
-        params: { username },
+export const getDislikesCount = async (threadId: string): Promise<number> => {
+    const data = await apiCall<{ dislikes_count: number }>({
+        url: `/threads/${threadId}/dislikes`,
+        method: "GET",
     });
-    return response.data;
+    return data.dislikes_count || 0;
 };
 
-export const likeThread = async (threadId: string, username: string) => {
-    await axiosInstance.post(`/threads/${threadId}/like`, null, {
+export const getLikeState = async (threadId: string, username: string): Promise<any> => {
+    return apiCall({
+        url: `/threads/${threadId}/likestate`,
+        method: "GET",
         params: { username },
     });
 };
 
-export const dislikeThread = async (threadId: string, username: string) => {
-    await axiosInstance.post(`/threads/${threadId}/dislike`, null, {
+export const getSaveState = async (threadId: string, username: string): Promise<any> => {
+    return apiCall({
+        url: `/threads/${threadId}/savestate`,
+        method: "GET",
         params: { username },
     });
 };
 
-export const saveThread = async (threadId: string, username: string) => {
-    await axiosInstance.post(`/threads/${threadId}/save`, null, {
+export const likeThread = async (threadId: string, username: string): Promise<void> => {
+    await apiCall({
+        url: `/threads/${threadId}/like`,
+        method: "POST",
         params: { username },
     });
 };
 
-export const removeLike = async (threadId: string, username: string) => {
-    await axiosInstance.delete(`/threads/${threadId}/like`, {
+export const dislikeThread = async (threadId: string, username: string): Promise<void> => {
+    await apiCall({
+        url: `/threads/${threadId}/dislike`,
+        method: "POST",
         params: { username },
     });
 };
 
-export const removeDislike = async (threadId: string, username: string) => {
-    await axiosInstance.delete(`/threads/${threadId}/dislike`, {
+export const saveThread = async (threadId: string, username: string): Promise<void> => {
+    await apiCall({
+        url: `/threads/${threadId}/save`,
+        method: "POST",
         params: { username },
     });
 };
 
-export const unsaveThread = async (threadId: string, username: string) => {
-    await axiosInstance.delete(`/threads/${threadId}/save`, {
+export const removeLike = async (threadId: string, username: string): Promise<void> => {
+    await apiCall({
+        url: `/threads/${threadId}/like`,
+        method: "DELETE",
+        params: { username },
+    });
+};
+
+export const removeDislike = async (threadId: string, username: string): Promise<void> => {
+    await apiCall({
+        url: `/threads/${threadId}/dislike`,
+        method: "DELETE",
+        params: { username },
+    });
+};
+
+export const unsaveThread = async (threadId: string, username: string): Promise<void> => {
+    await apiCall({
+        url: `/threads/${threadId}/save`,
+        method: "DELETE",
         params: { username },
     });
 };

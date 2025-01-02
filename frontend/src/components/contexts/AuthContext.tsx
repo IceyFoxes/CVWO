@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { createContextProvider } from "./createContext";
 
 interface AuthContextType {
     isLoggedIn: boolean;
@@ -7,7 +8,15 @@ interface AuthContextType {
     logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const initialAuthState: AuthContextType = {
+    isLoggedIn: false,
+    username: null,
+    login: () => {},
+    logout: () => {},
+};
+
+export const { Context: AuthContext, useGenericContext: useAuth } =
+    createContextProvider<AuthContextType>("AuthContext", initialAuthState);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -42,12 +51,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextType => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
 };

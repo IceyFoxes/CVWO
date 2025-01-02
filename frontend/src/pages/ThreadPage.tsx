@@ -1,41 +1,121 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Box, Typography, TextField } from "@mui/material";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import LikesDislikes from "../components/LikesDislikes";
-import Timestamp from "../components/shared/Timestamp";
-import CommentSection from "../components/CommentSection";
-import DeleteThread from "../components/DeleteThread";
-import { getThreadAuthorization, getThreadById } from "../services/threadService";
-import Layout from "../components/layouts/Layout";
 import { PrimaryButton } from "../components/shared/Buttons";
-import UpdateThread from "../components/UpdateThread";
-import { Thread } from "../components/CategoryGroup";
+import LikesDislikes from "../components/interactions/LikesDislikes";
+import SaveUnsave from "../components/interactions/SaveUnsave";
+import Timestamp from "../components/shared/Timestamp";
 import Loader from "../components/shared/Loader";
-import SaveUnsave from "../components/SaveUnsave";
+import Layout from "../components/layouts/Layout";
+import SearchBar from "../components/widgets/SearchBar";
+import SortMenu from "../components/widgets/SortMenu";
+import CustomCard from "../components/shared/Card";
+import DeleteThread from "../components/modals/DeleteThread";
+import UpdateThread from "../components/modals/UpdateThread";
+import { postComment, getThreadById, getThreadAuthorization } from "../services/threadService";
 import { useAuth } from "../components/contexts/AuthContext";
+import { useAlert } from "../components/contexts/AlertContext";
+import { useRefresh } from "../components/contexts/RefreshContext";
+import { useModal } from "../components/hooks/useModal";
+import { inputStyles } from "../components/shared/Styles";
+import { Thread } from "./HomePage";
+
+export interface Comment {
+    id: number;
+    parentId: number | null;
+    author: string;
+    content: string;
+    createdAt: string;
+    likesCount: number;
+    dislikesCount: number;
+    depth: number;
+    children: Comment[];
+}
+
+const buildCommentTree = (comments: Comment[]): Comment[] => {
+    const commentMap = new Map<number, Comment>();
+    comments.forEach((comment) => {
+        commentMap.set(comment.id, { ...comment, children: [] });
+    });
+
+    const rootComments: Comment[] = [];
+    commentMap.forEach((comment) => {
+        if (comment.parentId !== null && commentMap.has(comment.parentId)) {
+            commentMap.get(comment.parentId)?.children.push(comment);
+        } else {
+            rootComments.push(comment);
+        }
+    });
+
+    return rootComments;
+};
+
+const CommentItem: React.FC<{ comment: Comment }> = ({ comment }) => {
+    const [showChildren, setShowChildren] = useState(true);
+
+    return (
+        <CustomCard
+            content={comment.content}
+            linkTo={`/threads/${comment.id}`}
+            metadata={{
+                author: comment.author,
+                likes: comment.likesCount,
+                dislikes: comment.dislikesCount,
+                createdAt: comment.createdAt,
+                isMaxDepth: comment.depth === 3,
+            }}
+        >
+            <Box onClick={(e) => e.stopPropagation()}>
+                {comment.children.length > 0 && (
+                    <PrimaryButton
+                        onClick={() => setShowChildren(!showChildren)}
+                        style={{ marginLeft: 8 }}
+                    >
+                        {showChildren ? "Collapse Replies" : "Expand Replies"}
+                    </PrimaryButton>
+                )}
+            </Box>
+
+            {showChildren && (
+                <Box sx={{ paddingLeft: 2 }}>
+                    {comment.children.map((child) => (
+                        <CommentItem key={child.id} comment={child} />
+                    ))}
+                </Box>
+            )}
+        </CustomCard>
+    );
+};
 
 const ThreadDetails: React.FC = () => {
     const { id = "" } = useParams<{ id: string }>();
     const [thread, setThread] = useState<Thread | null>(null);
+    const [comments, setComments] = useState<Comment[]>([]);
     const [authorized, setAuthorized] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const { username } = useAuth();
-    const navigate = useNavigate();
+    const [commentContent, setCommentContent] = useState<string>("");
+    const [searchQuery, setSearchQuery] = useState<string>("");
+    const [sortBy, setSortBy] = useState<"createdAt" | "likes" | "dislikes">("createdAt");
+    const [showCommentBox, setShowCommentBox] = useState(false);
 
-    const handleOpenModal = () => setIsModalOpen(true);
-    const handleCloseModal = () => setIsModalOpen(false);
+    const { isOpen, openModal, closeModal } = useModal();
+    const { username } = useAuth();
+    const { showAlert } = useAlert();
+    const { triggerRefresh, refreshFlag } = useRefresh();
+    const navigate = useNavigate();
 
     const navigateToParent = () => {
         if (thread?.parentId) {
             navigate(`/threads/${thread.parentId}`);
         }
     };
-    
+
     const fetchThreadDetails = useCallback(async () => {
         try {
             setError(null);
             const data = await getThreadById(id);
             setThread(data.thread);
+            setComments(data.comments || []);
             const authResponseData = await getThreadAuthorization(id, username);
             setAuthorized(authResponseData.authorized || false);
         } catch (error) {
@@ -46,10 +126,35 @@ const ThreadDetails: React.FC = () => {
 
     useEffect(() => {
         fetchThreadDetails();
-    }, [fetchThreadDetails]);
+    }, [fetchThreadDetails, refreshFlag]);
 
-    if (error) return <p style={{ color: "red" }}>{error}</p>;
-    if (!thread) return <Loader></Loader>;
+    const handleCommentSubmit = async () => {
+        if (!username) {
+            showAlert("You must be logged in to comment.", "error");
+            return;
+        }
+
+        if (!commentContent.trim()) {
+            showAlert("Comment content cannot be empty.", "error");
+            return;
+        }
+
+        try {
+            await postComment(id, username, commentContent);
+            showAlert("Comment added successfully.", "success");
+            setCommentContent("");
+            setShowCommentBox(false);
+            triggerRefresh();
+        } catch (error) {
+            console.error("Failed to add comment:", error);
+            showAlert("Failed to add comment. Please try again.", "error");
+        }
+    };
+
+    const commentTree = useMemo(() => buildCommentTree(comments), [comments]);
+
+    if (error) return <Typography color="error">{error}</Typography>;
+    if (!thread) return <Loader />;
 
     return (
         <Layout>
@@ -63,42 +168,70 @@ const ThreadDetails: React.FC = () => {
                     Go to Parent Thread
                 </PrimaryButton>
             )}
-            
-            <div>
-                <h1>{thread.title}</h1>
-                <p>{thread.content}</p>
 
-                <small>
-                    Posted by {" "} 
+            <Box>
+                <Typography variant="h4">{thread.title}</Typography>
+                <Typography variant="body1">{thread.content}</Typography>
+
+                <Typography variant="caption">
+                    Posted by{" "}
                     <Link
-                        to={`/profile/${thread.author}`} 
+                        to={`/profile/${thread.author}`}
                         style={{ textDecoration: "none", color: "inherit" }}
                     >
                         {thread.author}
-                    </Link> 
+                    </Link>{" "}
                     <Timestamp date={thread.createdAt} />
-                </small>
+                </Typography>
 
                 <LikesDislikes threadId={id} />
-                
-                {username && (
-                    <SaveUnsave threadId={id} />
-                )}
+
+                {username && <SaveUnsave threadId={id} />}
 
                 {authorized && (
-                    <div>
-                        <PrimaryButton onClick={handleOpenModal}>Edit</PrimaryButton>
-                        <UpdateThread open={isModalOpen} onClose={handleCloseModal} threadId={id} />
+                    <Box>
+                        <PrimaryButton onClick={openModal}>Edit</PrimaryButton>
+                        <UpdateThread open={isOpen} onClose={closeModal} threadId={id} />
                         <DeleteThread threadId={id} authorized={authorized} />
-                    </div>
+                    </Box>
                 )}
 
-                <CommentSection
-                    threadId={id}
-                    username={username}
-                />
+                <Box sx={{ marginTop: 4 }}>
+                    <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+                    <SortMenu
+                        sortBy={sortBy}
+                        onSortChange={(field) => setSortBy(field as "createdAt" | "likes" | "dislikes")}
+                    />
 
-            </div>
+                    {showCommentBox && (
+                        <Box sx={{ marginBottom: 4 }}>
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={4}
+                                value={commentContent}
+                                onChange={(e) => setCommentContent(e.target.value)}
+                                placeholder="Write your comment here..."
+                                sx={inputStyles}
+                            />
+                            <PrimaryButton onClick={handleCommentSubmit} sx={{ marginTop: 2 }}>
+                                Submit Comment
+                            </PrimaryButton>
+                        </Box>
+                    )}
+
+                    <PrimaryButton onClick={() => setShowCommentBox(!showCommentBox)}>
+                        {showCommentBox ? "Cancel Comment" : "Add Comment"}
+                    </PrimaryButton>
+
+                    <Typography variant="h6" sx={{ marginTop: 4, marginBottom: 2 }}>
+                        Comments
+                    </Typography>
+                    {commentTree.map((comment) => (
+                        <CommentItem key={comment.id} comment={comment} />
+                    ))}
+                </Box>
+            </Box>
         </Layout>
     );
 };

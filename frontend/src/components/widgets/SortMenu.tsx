@@ -2,22 +2,25 @@ import React from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from "@mui/material";
 import { inputStyles } from "../shared/Styles";
 
+export type SortField = "createdAt" | "likes" | "dislikes" | "comments";
+
 interface SortMenuProps {
-    sortBy: string;
-    onSortChange: (sortField: string) => void;
-    excludedOptions?: string[]; // List of options to exclude
+    sortBy: SortField;
+    onSortChange: (sortField: SortField) => void;
+    excludedOptions?: SortField[]; // List of options to exclude
 }
 
 const SortMenu: React.FC<SortMenuProps> = ({ sortBy, onSortChange, excludedOptions = [] }) => {
-    const options = [
-        { value: "created_at", label: "Most Recent" },
+    const options: { value: SortField; label: string }[] = [
+        { value: "createdAt", label: "Most Recent" },
         { value: "likes", label: "Most Liked" },
         { value: "dislikes", label: "Most Disliked" },
         { value: "comments", label: "Most Commented" },
     ];
 
-    const handleSortChange = (event: SelectChangeEvent) => {
-        onSortChange(event.target.value);
+    const handleSortChange = (event: SelectChangeEvent<string>) => {
+        const value = event.target.value as SortField;
+        onSortChange(value);
     };
 
     return (

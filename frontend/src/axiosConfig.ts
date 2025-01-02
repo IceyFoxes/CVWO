@@ -1,21 +1,52 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
-const instance = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+const axiosInstance = axios.create({
+    baseURL: process.env.REACT_APP_API_URL,
+    timeout: 10000,
+    headers: {
+        "Content-Type": "application/json",
+    },
 });
 
-instance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("jwtToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+// Request Interceptor
+axiosInstance.interceptors.request.use(
+    (config) => {
+        // Add Authorization
+        const token = localStorage.getItem("jwtToken");
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error: AxiosError) => {
+        console.error("Request Error:", error);
+        return Promise.reject(error);
     }
-    return config;
-  },
-  (error) =>{
-    console.error("Interceptor error:", error);
-    Promise.reject(new Error(error));
-  }
 );
 
-export default instance;
+// Response Interceptor
+axiosInstance.interceptors.response.use(
+    (response) => response,
+    (error: AxiosError) => {
+        // Centralized error handling
+        if (error.response) {
+          const status = error.response.status;
+          const data = error.response.data;
+          let errorMessage = `Response Error: ${status}`;
+          
+          if (data && typeof data === "object" && "message" in data) {
+              errorMessage += ` - ${data.message}`;
+          } else {
+              errorMessage += ` - ${error.response.statusText}`;
+          }
+          console.error(errorMessage);
+        } else if (error.request) {
+            console.error("No response received from the server:", error.request);
+        } else {
+            console.error("Unexpected Axios Error:", error.message);
+        }
+        return Promise.reject(error);
+    }
+);
+
+export default axiosInstance;

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Box, TextField, MenuItem } from "@mui/material";
-import CustomModal from "./shared/Modal";
-import TagInput from "./TagInput";
-import { inputStyles } from "./shared/Styles";
-import { createThread, fetchCategories } from "../services/threadService";
-import { PrimaryButton } from "./shared/Buttons";
-import { useAlert } from "./contexts/AlertContext";
-import { getAuthorization } from "../services/userService";
-import { useRefresh } from "./contexts/RefreshContext";
-import { useAuth } from "./contexts/AuthContext";
+import { Box, TextField, MenuItem, Autocomplete } from "@mui/material";
+import CustomModal from "../shared/Modal";
+import { inputStyles } from "../shared/Styles";
+import { createThread, fetchCategories, fetchTags } from "../../services/threadService";
+import { PrimaryButton } from "../shared/Buttons";
+import { useAlert } from "../contexts/AlertContext";
+import { getAuthorization } from "../../services/userService";
+import { useRefresh } from "../contexts/RefreshContext";
+import { useAuth } from "../contexts/AuthContext";
 
 const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
     const [title, setTitle] = useState<string>("");
@@ -16,6 +15,7 @@ const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, 
     const [tag, setTag] = useState<string>("");
     const [category, setCategory] = useState<string>("");
     const [categories, setCategories] = useState<string[]>([]);
+    const [tagOptions, setTagOptions] = useState<string[]>([]);
     const { showAlert } = useAlert();
     const { triggerRefresh } = useRefresh();
     const { username } = useAuth();
@@ -32,8 +32,11 @@ const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, 
                 );
 
                 setCategories(filteredCategories);
+
+                const tags = await fetchTags();
+                setTagOptions(Array.isArray(tags) ? tags : []);
             } catch (error) {
-                console.error("Failed to fetch categories:", error);
+                console.error("Failed to fetch data:", error);
             }
         };
         fetchData();
@@ -97,7 +100,23 @@ const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, 
                         </MenuItem>
                     ))}
                 </TextField>
-                <TagInput tag={tag} setTag={setTag} />
+                <Autocomplete
+                    freeSolo
+                    options={tagOptions}
+                    value={tag || ""}
+                    onChange={(_, newValue) => setTag(newValue ?? "")}
+                    onInputChange={(_, newValue) => setTag(newValue)}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Tag"
+                            placeholder="Search or create a tag"
+                            variant="outlined"
+                            fullWidth
+                            sx={inputStyles}
+                        />
+                    )}
+                />
                 <PrimaryButton onClick={handleSubmit}>Create New Thread</PrimaryButton>
             </Box>
         </CustomModal>

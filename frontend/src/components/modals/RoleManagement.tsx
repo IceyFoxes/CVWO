@@ -1,9 +1,9 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { promoteUser, demoteUser } from "../services/userService";
-import { useAlert } from "./contexts/AlertContext";
-import { DangerButton, PrimaryButton } from "./shared/Buttons";
-import { useRefresh } from "./contexts/RefreshContext";
+import { promoteUser, demoteUser } from "../../services/userService";
+import { useAlert } from "../contexts/AlertContext";
+import { DangerButton, PrimaryButton } from "../shared/Buttons";
+import { useRefresh } from "../contexts/RefreshContext";
 
 interface RoleManagementProps {
   username: string;

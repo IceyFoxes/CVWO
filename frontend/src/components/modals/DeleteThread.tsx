@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import CustomModal from "./shared/Modal";
-import { useAlert } from "./contexts/AlertContext";
-import { deleteThread, getThreadById } from "../services/threadService";
-import { DangerButton } from "./shared/Buttons";
-import { useAuth } from "./contexts/AuthContext";
+import CustomModal from "../shared/Modal";
+import { useAlert } from "../contexts/AlertContext";
+import { deleteThread, getThreadById } from "../../services/threadService";
+import { DangerButton } from "../shared/Buttons";
+import { useAuth } from "../contexts/AuthContext";
 
 const DeleteThread: React.FC<{ threadId: string; authorized?: boolean }> = ({ threadId, authorized = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);

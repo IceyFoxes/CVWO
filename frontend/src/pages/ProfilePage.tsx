@@ -1,167 +1,166 @@
 import React, { useEffect, useState } from "react";
-import UserInfo from "../components/UserInfo";
-import UpdateUserBio from "../components/UpdateUserBio"; // New Component for Editing Bio
-import { getAuthorization, getUserInfo, getUserMetrics, getUserScores, updatePassword } from "../services/userService";
 import { useParams } from "react-router-dom";
-import { Box } from "@mui/material";
-import UserMetrics, { Metrics } from "../components/UserMetrics";
-import Loader from "../components/shared/Loader";
-import UserScores, { Scores } from "../components/UserScores";
-import UserActivity from "../components/UserActivity";
-import { PrimaryButton } from "../components/shared/Buttons";
-import PasswordChangeModal from "../components/PasswordChange";
-import { useAlert } from "../components/contexts/AlertContext";
-import RoleManagement from "../components/RoleManagement";
-import { useRefresh } from "../components/contexts/RefreshContext";
+import { Box, Typography } from "@mui/material";
 import Layout from "../components/layouts/Layout";
+import Loader from "../components/shared/Loader";
+import UserInfo from "../components/profile/UserInfo";
+import UserMetrics, { Metrics } from "../components/profile/UserMetrics";
+import UserScores, { Scores } from "../components/profile/UserScores";
+import UserActivity from "../components/profile/UserActivity";
+import RoleManagement from "../components/modals/RoleManagement";
+import PasswordChangeModal from "../components/modals/PasswordChange";
+import UpdateUserBio from "../components/modals/UpdateUserBio";
+import { PrimaryButton } from "../components/shared/Buttons";
 import { useAuth } from "../components/contexts/AuthContext";
+import { useAlert } from "../components/contexts/AlertContext";
+import { useRefresh } from "../components/contexts/RefreshContext";
+import { useModal } from "../components/hooks/useModal";
+import {
+    getAuthorization,
+    getUserInfo,
+    getUserMetrics,
+    getUserScores,
+    updatePassword,
+} from "../services/userService";
 
 interface UserInfoData {
-  joinDate: string;
-  role: string;
-  bio: string;
+    joinDate: string;
+    role: string;
+    bio: string;
 }
 
 const ProfilePage: React.FC = () => {
-  const { usernameProfile } = useParams<{ usernameProfile: string }>();
-  const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
-  const [userMetrics, setUserMetrics] = useState<Metrics | null>(null);
-  const [userScores, setUserScores] = useState<Scores | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [isBioModalOpen, setIsBioModalOpen] = useState(false); // New state for Bio Modal
-  const { refreshFlag } = useRefresh();
-  const { showAlert } = useAlert();
-  const { username } = useAuth();
+    const { usernameProfile } = useParams<{ usernameProfile: string }>();
+    const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
+    const [userMetrics, setUserMetrics] = useState<Metrics | null>(null);
+    const [userScores, setUserScores] = useState<Scores | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  const handleOpenPasswordModal = () => setIsPasswordModalOpen(true);
-  const handleClosePasswordModal = () => setIsPasswordModalOpen(false);
+    const { isOpen: isPasswordModalOpen, openModal: openPasswordModal, closeModal: closePasswordModal } = useModal();
+    const { isOpen: isBioModalOpen, openModal: openBioModal, closeModal: closeBioModal } = useModal();
 
-  const handleOpenBioModal = () => setIsBioModalOpen(true); // Open Bio Modal
-  const handleCloseBioModal = () => setIsBioModalOpen(false); // Close Bio Modal
+    const { username } = useAuth();
+    const { showAlert } = useAlert();
+    const { refreshFlag } = useRefresh();
 
-  const handlePasswordChange = async (data: { currentPassword: string; newPassword: string }) => {
-    try {
-      await updatePassword(username ?? "", data.currentPassword, data.newPassword);
-      showAlert("Password updated successfully!", "success");
-      handleClosePasswordModal();
-    } catch (error: any) {
-      showAlert(error.response?.data.error || "Failed to update password.", "error");
-    }
-  };
-
-  const handleBioUpdate = (newBio: string) => {
-    if (userInfo) {
-      setUserInfo({ ...userInfo, bio: newBio });
-      showAlert("Bio updated successfully!", "success");
-    }
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [userInfoData, userMetricsData, userScoresData] = await Promise.all([
-          getUserInfo(usernameProfile ?? ""),
-          getUserMetrics(usernameProfile ?? ""),
-          getUserScores(usernameProfile ?? ""),
-        ]);
-        setUserInfo(userInfoData);
-        setUserMetrics(userMetricsData);
-        setUserScores(userScoresData);
-        
-        const authData = await getAuthorization(username);
-        setIsAdmin(authData);
-
-        setError(null);
-      } catch (err) {
-        setError("Failed to fetch user information or metrics.");
-      } finally {
-        setLoading(false);
-      }
+    const handlePasswordChange = async (data: { currentPassword: string; newPassword: string }) => {
+        try {
+            await updatePassword(username ?? "", data.currentPassword, data.newPassword);
+            showAlert("Password updated successfully!", "success");
+            closePasswordModal();
+        } catch (error: any) {
+            showAlert(error.response?.data.error || "Failed to update password.", "error");
+        }
     };
 
-    fetchData();
-  }, [usernameProfile, username, refreshFlag]);
+    const handleBioUpdate = (newBio: string) => {
+        if (userInfo) {
+            setUserInfo({ ...userInfo, bio: newBio });
+            showAlert("Bio updated successfully!", "success");
+        }
+    };
 
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-  if (loading) return <Loader></Loader>;
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [userInfoData, userMetricsData, userScoresData] = await Promise.all([
+                    getUserInfo(usernameProfile ?? ""),
+                    getUserMetrics(usernameProfile ?? ""),
+                    getUserScores(usernameProfile ?? ""),
+                ]);
 
-  return (
-    <Layout>
-      <Box p={4} maxWidth="800px" margin="auto">
-        {userInfo && (
-          <>
-            <UserInfo
-              username={usernameProfile ?? ""}
-              joinDate={userInfo.joinDate}
-              role={userInfo.role}
-              bio={userInfo.bio}
-            />
-            {username === usernameProfile && (
-              <PrimaryButton
-                variant="contained"
-                color="primary"
-                onClick={handleOpenBioModal}
-                sx={{ mt: 2 }}
-              >
-                Update Bio
-              </PrimaryButton>
-            )}
-          </>
-        )}
+                setUserInfo(userInfoData);
+                setUserMetrics(userMetricsData);
+                setUserScores(userScoresData);
 
-        {userMetrics && (
-          <Box mt={4}>
-            <UserMetrics metrics={userMetrics} />
-          </Box>
-        )}
+                const authData = await getAuthorization(username);
+                setIsAdmin(authData);
 
-        {userScores !== null && (
-          <Box mt={4}>
-            <UserScores scores={userScores} />
-          </Box>
-        )}
+                setError(null);
+            } catch (err) {
+                setError("Failed to fetch user information or metrics.");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        {usernameProfile && (
-          <Box mt={4}>
-            <UserActivity username={usernameProfile} />
-          </Box>
-        )}
+        fetchData();
+    }, [usernameProfile, username, refreshFlag]);
 
-        {isAdmin && (
-          <Box mt={4} mb={4}>
-            <RoleManagement username={usernameProfile ?? ""} isAdmin={userInfo?.role === "Admin"} />
-          </Box>
-        )}
-        
-        {username === usernameProfile && (
-          <Box>
-            <PrimaryButton variant="contained" color="primary" onClick={handleOpenPasswordModal}>
-              Change Password
-            </PrimaryButton>
-            <PasswordChangeModal
-              open={isPasswordModalOpen}
-              onClose={handleClosePasswordModal}
-              onConfirm={handlePasswordChange}
-            />
-          </Box>
-        )}
+    if (error) return <Typography color="error">{error}</Typography>;
+    if (loading) return <Loader />;
 
-        {userInfo && (
-          <UpdateUserBio
-            open={isBioModalOpen}
-            username={usernameProfile ?? ""}
-            currentBio={userInfo.bio}
-            onClose={handleCloseBioModal}
-            onBioUpdate={handleBioUpdate}
-          />
-        )}
-      </Box>
-    </Layout>
-  );
+    return (
+        <Layout>
+            <Box p={4} maxWidth="800px" margin="auto">
+                {userInfo && (
+                    <>
+                        <UserInfo
+                            username={usernameProfile ?? ""}
+                            joinDate={userInfo.joinDate}
+                            role={userInfo.role}
+                            bio={userInfo.bio}
+                        />
+                        {username === usernameProfile && (
+                            <PrimaryButton variant="contained" color="primary" onClick={openBioModal} sx={{ mt: 2 }}>
+                                Update Bio
+                            </PrimaryButton>
+                        )}
+                    </>
+                )}
+
+                {userMetrics && (
+                    <Box mt={4}>
+                        <UserMetrics metrics={userMetrics} />
+                    </Box>
+                )}
+
+                {userScores && (
+                    <Box mt={4}>
+                        <UserScores scores={userScores} />
+                    </Box>
+                )}
+
+                {usernameProfile && (
+                    <Box mt={4}>
+                        <UserActivity username={usernameProfile} />
+                    </Box>
+                )}
+
+                {isAdmin && (
+                    <Box mt={4} mb={4}>
+                        <RoleManagement username={usernameProfile ?? ""} isAdmin={userInfo?.role === "Admin"} />
+                    </Box>
+                )}
+
+                {username === usernameProfile && (
+                    <Box>
+                        <PrimaryButton variant="contained" color="primary" onClick={openPasswordModal}>
+                            Change Password
+                        </PrimaryButton>
+                        <PasswordChangeModal
+                            open={isPasswordModalOpen}
+                            onClose={closePasswordModal}
+                            onConfirm={handlePasswordChange}
+                        />
+                    </Box>
+                )}
+
+                {userInfo && (
+                    <UpdateUserBio
+                        open={isBioModalOpen}
+                        username={usernameProfile ?? ""}
+                        currentBio={userInfo.bio}
+                        onClose={closeBioModal}
+                        onBioUpdate={handleBioUpdate}
+                    />
+                )}
+            </Box>
+        </Layout>
+    );
 };
 
 export default ProfilePage;

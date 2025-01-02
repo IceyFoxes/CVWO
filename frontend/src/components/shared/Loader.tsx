@@ -1,7 +1,27 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { CircularProgress, Box, Typography } from "@mui/material";
 
-const Loader: React.FC<{ message?: string }> = ({ message = "Please be patient ;-; Render Backend will sleep after inactivity... Waking up now..." }) => {
+interface LoaderProps {
+    initialMessage?: string;
+    longWaitMessage?: string;
+    longWaitThreshold?: number;
+}
+
+const Loader: React.FC<LoaderProps> = ({
+    initialMessage = "Loading...",
+    longWaitMessage = "Please be patient... Waking up the backend now!",
+    longWaitThreshold = 3000, 
+}) => {
+    const [message, setMessage] = useState(initialMessage);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setMessage(longWaitMessage);
+        }, longWaitThreshold);
+
+        return () => clearTimeout(timer); 
+    }, [longWaitMessage, longWaitThreshold]);
+
     return (
         <Box
             sx={{

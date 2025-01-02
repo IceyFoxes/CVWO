@@ -9,7 +9,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Header />
             <Box sx={{ display: 'flex', flexGrow: 1, marginTop: '64px' }}>
                 <Sidebar />
-                <Box sx={{ flexGrow: 1, marginLeft: '250px', padding: 2 }}>
+                <Box sx={{ flexGrow: 1, padding: 2 }}>
                     {children}
                 </Box>
             </Box>

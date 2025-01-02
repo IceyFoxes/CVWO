@@ -1,30 +1,50 @@
 import React, { useState, useEffect } from "react";
-import { fetchCategories, getThreads } from "../services/threadService";
 import { Box, Typography } from "@mui/material";
+import { Link } from "react-router-dom";
+import { fetchCategories, getThreads } from "../services/threadService";
 import Layout from "../components/layouts/Layout";
 import { PrimaryButton } from "../components/shared/Buttons";
 import Loader from "../components/shared/Loader";
-import { useRefresh } from "../components/contexts/RefreshContext";
-import CategoryGroup, { Thread } from "../components/CategoryGroup";
 import Pagination from "../components/widgets/Pagination";
 import SortMenu from "../components/widgets/SortMenu";
+import CustomCard from "../components/shared/Card";
+import { listItemStyles } from "../components/shared/Styles";
+import { useRefresh } from "../components/contexts/RefreshContext";
+
+export interface Thread {
+    id: number;
+    title?: string | null;
+    content: string;
+    category?: string | null;
+    author: string;
+    createdAt: string;
+    userId: number;
+    parentId?: number | null;
+    likesCount: number;
+    dislikesCount: number;
+    commentsCount: number;
+    depth: number;
+    tag?: string | null;
+}
 
 interface Category {
     id: number;
     name: string;
 }
 
+type SortField = "createdAt" | "likes" | "dislikes" | "comments";
+
 const HomePage: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [threadsByCategory, setThreadsByCategory] = useState<{ [key: string]: Thread[] }>({});
-    const [pageStates, setPageStates] = useState<{ [key: string]: number }>({}); // Current page per category
+    const [pageStates, setPageStates] = useState<{ [key: string]: number }>({});
     const [totalPagesByCategory, setTotalPagesByCategory] = useState<{ [key: string]: number }>({});
-    const [sortStates, setSortStates] = useState<{ [key: string]: string }>({}); // Sorting state per category
+    const [sortStates, setSortStates] = useState<{ [key: string]: SortField }>({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { refreshFlag } = useRefresh();
 
-    const itemsPerPage = 5;
+    const itemsPerPage = 3;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -35,15 +55,15 @@ const HomePage: React.FC = () => {
 
                 const threadsPromises = categoriesData.categories.map(async (category: Category) => {
                     const currentPage = pageStates[category.name] || 1;
-                    const sortBy = sortStates[category.name] || "created_at";
+                    const sortBy = sortStates[category.name] || "createdAt";
                     const response = await getThreads({
                         query: "",
-                        sortBy: sortBy,
+                        sortBy,
                         page: currentPage,
                         limit: itemsPerPage,
                         category: category.name,
                     });
-                    
+
                     setTotalPagesByCategory((prev) => ({
                         ...prev,
                         [category.name]: response.totalPages,
@@ -67,7 +87,6 @@ const HomePage: React.FC = () => {
         fetchData();
     }, [refreshFlag, pageStates, sortStates]);
 
-    // Pagination handler
     const handlePageChange = (categoryName: string, page: number) => {
         setPageStates((prev) => ({
             ...prev,
@@ -75,8 +94,7 @@ const HomePage: React.FC = () => {
         }));
     };
 
-    // Sorting handler
-    const handleSortChange = (categoryName: string, sortField: string) => {
+    const handleSortChange = (categoryName: string, sortField: SortField) => {
         setSortStates((prev) => ({
             ...prev,
             [categoryName]: sortField,
@@ -110,17 +128,50 @@ const HomePage: React.FC = () => {
                         {categories.length > 0 ? (
                             categories.map((category) => (
                                 <Box key={category.id} sx={{ marginBottom: 4 }}>
-                                    {/* Sort Menu for each category */}
+                                    {/* Category Header */}
+                                    <Box
+                                        component={Link}
+                                        to={`/category/${category.name}`}
+                                        sx={{ ...listItemStyles, marginBottom: 2 }}
+                                    >
+                                        <Typography variant="h5">{category.name}</Typography>
+                                    </Box>
+
+                                    {/* Sort Menu */}
                                     <SortMenu
-                                        sortBy={sortStates[category.name] || "created_at"}
-                                        onSortChange={(sortField) => handleSortChange(category.name, sortField)}
+                                        sortBy={sortStates[category.name] || "createdAt"}
+                                        onSortChange={(sortField) =>
+                                            handleSortChange(category.name, sortField as SortField)
+                                        }
                                     />
-                                    <CategoryGroup
-                                        category={category}
-                                        threads={threadsByCategory[category.name] || []}
-                                        currentPath={`/category/${category.name}`}
-                                    />
-                                    {/* Pagination for each category */}
+
+                                    {/* Threads under the category */}
+                                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                                        {(threadsByCategory[category.name] || []).map((thread) => (
+                                            <CustomCard
+                                                key={thread.id}
+                                                title={thread.title ?? "Untitled Thread"}
+                                                content={
+                                                    <Typography variant="body2">
+                                                        {thread.content.length > 100
+                                                            ? `${thread.content.substring(0, 100)}...`
+                                                            : thread.content}
+                                                    </Typography>
+                                                }
+                                                linkTo={`/threads/${thread.id}`}
+                                                metadata={{
+                                                    author: thread.author,
+                                                    likes: thread.likesCount,
+                                                    dislikes: thread.dislikesCount,
+                                                    comments: thread.commentsCount,
+                                                    createdAt: thread.createdAt,
+                                                }}
+                                                footer={thread.tag ?? ""}
+                                            />
+                                        ))}
+                                    </Box>
+
+                                    {/* Pagination */}
                                     <Pagination
                                         currentPage={pageStates[category.name] || 1}
                                         totalPages={totalPagesByCategory[category.name] || 1}
