@@ -70,15 +70,8 @@ export const modalStyles: SxProps<Theme> = {
 };
 
 export const sidebarContainer: SxProps<Theme> = {
-    width: 250,
-    padding: 2,
+    width: { xs: '100%', sm: 250 },
     borderRight: "1px solid #ddd",
-    position: "sticky",
-    top: 100,
-    height: "100vh", 
-    overflowY: "auto", 
-    backgroundColor: (theme) => theme.palette.background.paper, 
-    boxShadow: 2, 
 };
 
 

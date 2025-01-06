@@ -1,5 +1,6 @@
 import React from "react";
 import { Snackbar, Alert, AlertColor, Slide, Typography } from "@mui/material";
+import { TransitionProps } from "@mui/material/transitions";
 
 interface CustomAlertProps {
     open: boolean;
@@ -8,6 +9,13 @@ interface CustomAlertProps {
     onClose: () => void;
 }
 
+const TransitionDown = React.forwardRef(function TransitionDown(
+    props: TransitionProps & { children: React.ReactElement<any, any> },
+    ref: React.Ref<unknown>
+) {
+    return <Slide {...props} direction="down" ref={ref} />;
+});
+
 const CustomAlert: React.FC<CustomAlertProps> = ({ open, message, severity, onClose }) => {
     return (
         <Snackbar
@@ -15,7 +23,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ open, message, severity, onCl
             onClose={onClose}
             anchorOrigin={{ vertical:"top", horizontal:"center" }}
             autoHideDuration={3000} 
-            TransitionComponent={(props) => <Slide {...props} direction="down" />}
+            TransitionComponent={TransitionDown}
             sx={{
                 "& .MuiSnackbarContent-root": {
                     boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.25)",

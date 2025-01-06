@@ -5,7 +5,7 @@ import { fetchCategories } from "../../services/threadService";
 import { getUserSavedThreads } from "../../services/userService";
 import { useRefresh } from "../contexts/RefreshContext";
 import { useAuth } from "../contexts/AuthContext";
-import { sidebarContainer, listItemStyles } from "../shared/Styles";
+import { listItemStyles } from "../shared/Styles";
 
 interface Category {
     id: number;
@@ -42,7 +42,7 @@ const Sidebar: React.FC = () => {
     }, [username, isLoggedIn, refreshFlag]);
 
     return (
-        <Box sx={sidebarContainer}>
+        <Box>
             <Typography variant="h6" sx={{fontWeight: "bold"}} gutterBottom>
                 Navigation
             </Typography>
