@@ -24,31 +24,25 @@ interface CustomCardProps {
 const CustomCard: React.FC<CustomCardProps> = ({ title, content, footer, linkTo, metadata, children }) => {
     const navigate = useNavigate();
     return (
-        <Card
-            sx={{
-                ...cardStyles,
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                cursor: "pointer",
-                "&:hover": {
-                    boxShadow: 10,
-                },
-            }}
-        >
+        <Card sx={cardStyles}>
+            {/* Title Section */}
             {title && (
                 <Box
                     sx={{
                         padding: 2,
-                        backgroundColor: "primary.light",
+                        backgroundColor: (theme) => theme.palette.primary.main,
+                        color: (theme) => theme.palette.primary.contrastText,
                         borderBottom: "1px solid #ddd",
+                        textAlign: "center", // Center-align the title
                     }}
                 >
-                    <Typography variant="h6" sx={{ fontWeight: "bold", color: "primary.contrastText" }}>
+                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                         {title}
                     </Typography>
                 </Box>
             )}
+
+            {/* Content Section */}
             <CardContent
                 sx={{
                     flexGrow: 1,
@@ -56,18 +50,14 @@ const CustomCard: React.FC<CustomCardProps> = ({ title, content, footer, linkTo,
                     "&:last-child": { paddingBottom: 3 },
                 }}
             >
+                {/* Main Content */}
                 {content}
+
+                {/* Metadata Section */}
                 {metadata && (
-                    <>
+                    <Box sx={{ marginTop: 2, color: "text.primary", fontSize: "0.875rem" }}>
                         {metadata.author && (
-                            <Typography
-                                variant="caption"
-                                display="block"
-                                sx={{
-                                    pointerEvents: "auto", // Allow interaction for author link
-                                }}
-                                onClick={(e) => e.stopPropagation()} // Prevent card click propagation
-                            >
+                            <Typography variant="caption" display="block">
                                 By:{" "}
                                 <Link
                                     to={`/profile/${metadata.author}`}
@@ -75,6 +65,7 @@ const CustomCard: React.FC<CustomCardProps> = ({ title, content, footer, linkTo,
                                         textDecoration: "none",
                                         color: "inherit",
                                     }}
+                                    onClick={(e) => e.stopPropagation()} // Prevent card click propagation
                                 >
                                     {metadata.author}
                                 </Link>
@@ -82,41 +73,56 @@ const CustomCard: React.FC<CustomCardProps> = ({ title, content, footer, linkTo,
                         )}
                         {metadata.likes !== undefined && (
                             <Typography variant="caption" display="block">
-                                Likes: {metadata.likes}
+                                👍 Likes: {metadata.likes}
                             </Typography>
                         )}
                         {metadata.dislikes !== undefined && (
                             <Typography variant="caption" display="block">
-                                Dislikes: {metadata.dislikes}
+                                👎 Dislikes: {metadata.dislikes}
                             </Typography>
                         )}
                         {metadata.comments !== undefined && (
                             <Typography variant="caption" display="block">
-                                Comments: {metadata.comments}
+                                💬 Comments: {metadata.comments}
                             </Typography>
                         )}
                         {metadata.createdAt && (
                             <Typography variant="caption" display="block">
-                                Created: <Timestamp date={metadata.createdAt}></Timestamp>
+                                📅 Created: <Timestamp date={metadata.createdAt} />
                             </Typography>
                         )}
-                    </>
+                    </Box>
                 )}
-                {!metadata?.isMaxDepth && (<CardActions>
-                    <PrimaryButton
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(linkTo);
-                        }}
-                    >
-                        View Details
-                    </PrimaryButton>
-                </CardActions>
-                )} 
+
+                {/* View Details Button */}
+                {!metadata?.isMaxDepth && (
+                    <CardActions sx={{ marginTop: 2 }}>
+                        <PrimaryButton
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(linkTo);
+                            }}
+                        >
+                            View Details
+                        </PrimaryButton>
+                    </CardActions>
+                )}
             </CardContent>
-            
-            {children && <Box sx={{ padding: 2 }}>{children}</Box>}
-            
+
+            {/* Children Section */}
+            {children && (
+                <Box
+                    sx={{
+                        padding: 2,
+                        backgroundColor: "background.default",
+                        borderTop: "1px solid #ddd",
+                    }}
+                >
+                    {children}
+                </Box>
+            )}
+
+            {/* Footer Section */}
             {footer && (
                 <CardActions
                     sx={{

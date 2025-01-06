@@ -2,54 +2,24 @@ import React from 'react';
 import { Button, ButtonProps } from '@mui/material';
 import { buttonStyles } from './Styles';
 import { Link } from 'react-router-dom';
+import { useTheme } from "@mui/material/styles";
+import { red } from '@mui/material/colors';
 
 export const PrimaryButton: React.FC<ButtonProps> = (props) => {
+    const theme = useTheme();
+
     return (
         <Button
             variant="contained"
-            color="primary"
             {...props}
             sx={{
-                ...(buttonStyles as any),
-                ...(props.sx || {}),
-                borderRadius: '8px', // Optional: custom border radius
-            }}
-        >
-            {props.children}
-        </Button>
-    );
-};
-
-export const SecondaryButton: React.FC<ButtonProps> = (props) => {
-    return (
-        <Button
-            variant="contained"
-            color="secondary"
-            {...props}
-            sx={{
-                ...(buttonStyles as any),
-                ...(props.sx || {}),
-                borderRadius: '4px', // Optional: smaller radius
-            }}
-        >
-            {props.children}
-        </Button>
-    );
-};
-
-export const OutlinedButton: React.FC<ButtonProps> = (props) => {
-    return (
-        <Button
-            variant="outlined"
-            color="primary"
-            {...props}
-            sx={{
-                ...(buttonStyles as any),
-                ...(props.sx || {}),
-                borderColor: 'primary.main',
-                '&:hover': {
-                    backgroundColor: 'rgba(25, 118, 210, 0.1)', // Optional: hover effect
+                backgroundColor: theme.palette.primary.main,
+                color: theme.palette.primary.contrastText,
+                "&:hover": {
+                    backgroundColor: theme.palette.primary.dark, 
                 },
+                ...(buttonStyles as any),
+                ...(props.sx || {}),
             }}
         >
             {props.children}
@@ -58,15 +28,17 @@ export const OutlinedButton: React.FC<ButtonProps> = (props) => {
 };
 
 export const DangerButton: React.FC<ButtonProps> = (props) => {
+    const theme = useTheme();
+    
     return (
         <Button
-            variant="contained"
             color="error"
             {...props}
             sx={{
                 ...(buttonStyles as any),
                 ...(props.sx || {}),
-                color: '#fff',
+                backgroundColor: red[500],
+                color: theme.palette.primary.contrastText,
                 '&:hover': {
                     backgroundColor: '#d32f2f',
                 },
@@ -86,12 +58,8 @@ export const LinkButton: React.FC<LinkButtonProps> = ({ to, ...props }) => {
         <Button   
             component={Link}
             to={to}
+            variant="contained"
             {...props}
-            sx={{
-                textDecoration: 'underline',
-                textTransform: 'none',
-                ...props.sx,
-            }}
         >
             {props.children}
         </Button>

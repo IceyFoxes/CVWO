@@ -15,18 +15,22 @@ export const buttonStyles: SxProps<Theme> = {
 };
 
 export const cardStyles: SxProps<Theme> = {
-    borderRadius: 2,
-    boxShadow: 3,
-    transition: "transform 0.3s ease, box-shadow 0.3s ease",
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    cursor: "pointer",
+    borderRadius: "8px", // Rounded corners
+    boxShadow: 3, // Default shadow
+    transition: "box-shadow 0.3s ease, transform 0.2s ease", // Smooth hover effects
     "&:hover": {
-        transform: "scale(1.02)",
-        boxShadow: 6,
+        boxShadow: 6, // Enhanced shadow on hover
+        transform: "scale(1.02)", // Slight scale effect
     },
-    backgroundColor: "background.paper",
 };
 
 // For Text fields
 export const inputStyles: SxProps<Theme> = {
+    color: "text.primary",
     "& .MuiOutlinedInput-root": {
         "&:hover fieldset": {
             borderColor: "primary.main",
@@ -38,16 +42,19 @@ export const inputStyles: SxProps<Theme> = {
 };
 
 export const listItemStyles: SxProps<Theme> = {
-    padding: "8px 16px",
+    padding: { xs: "6px 12px", sm: "8px 16px" }, 
+    fontSize: { xs: "0.875rem", sm: "1rem" }, 
     "&.Mui-selected": {
-        backgroundColor: "secondary.light",
+        backgroundColor: (theme) => theme.palette.secondary.light,
         "&:hover": {
-            backgroundColor: "secondary.main",
+            backgroundColor: (theme) => theme.palette.secondary.main,
         },
     },
     "&:hover": {
-        backgroundColor: "grey.100",
+        backgroundColor: (theme) => theme.palette.grey[500], // Grey hover
     },
+    transition: "background-color 0.2s ease-in-out", // Smooth transition for hover effects
+    borderRadius: "8px",
 };
 
 export const modalStyles: SxProps<Theme> = {
@@ -62,17 +69,16 @@ export const modalStyles: SxProps<Theme> = {
     padding: 4,
 };
 
-export const headerStyles: SxProps<Theme> = {
-    flexGrow: 1,
-    padding: 2,
-    borderRadius: 1,
-    boxShadow: 2,
-};
-
 export const sidebarContainer: SxProps<Theme> = {
-        width: 250,
-        padding: 2,
-        borderRight: "1px solid #ddd",
+    width: 250,
+    padding: 2,
+    borderRight: "1px solid #ddd",
+    position: "sticky",
+    top: 100,
+    height: "100vh", 
+    overflowY: "auto", 
+    backgroundColor: (theme) => theme.palette.background.paper, 
+    boxShadow: 2, 
 };
 
 

@@ -43,8 +43,8 @@ const Sidebar: React.FC = () => {
 
     return (
         <Box sx={sidebarContainer}>
-            <Typography variant="h6" gutterBottom>
-                Forum Navigation
+            <Typography variant="h6" sx={{fontWeight: "bold"}} gutterBottom>
+                Navigation
             </Typography>
 
             <List>
@@ -69,7 +69,7 @@ const Sidebar: React.FC = () => {
 
                 <Divider sx={{ my: 2 }} />
 
-                <Typography variant="h6" gutterBottom>
+                <Typography variant="h6" sx={{fontWeight: "bold"}} gutterBottom>
                     Categories
                 </Typography>
                 {categories.map((category) => (
@@ -84,11 +84,15 @@ const Sidebar: React.FC = () => {
                     </ListItemButton>
                 ))}
 
-                <Typography variant="h6" gutterBottom>
+                <Divider sx={{ my: 2 }} />
+
+                <Typography variant="h6" sx={{fontWeight: "bold"}} gutterBottom>
                     Saved Threads
                 </Typography>
                 {savedThreads.length === 0 ? (
-                    <Typography>{username ? "No saved threads" : "Login to view saved threads"}</Typography>
+                    <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                        {username ? "No saved threads" : "Login to view saved threads"}
+                    </Typography>
                 ) : (
                     <List>
                         {savedThreads.map((thread) => (

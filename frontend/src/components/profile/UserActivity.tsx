@@ -102,16 +102,17 @@ const UserActivity: React.FC<{ username: string }> = ({ username }) => {
             <SearchBar searchQuery={searchQuery} onSearchChange={handleSearchChange} />
             <SortMenu
                 sortBy={sortBy}
-                onSortChange={handleSortChange} // Updated to ensure compatibility
+                onSortChange={handleSortChange}
             />
             <Tabs
                 value={activeTab}
                 onChange={handleTabChange}
                 sx={{ marginBottom: 2 }}
+
             >
-                <Tab value="overview" label="Overview" />
-                <Tab value="threads" label="Threads" />
-                <Tab value="comments" label="Comments" />
+                <Tab value="overview" label="Overview" sx = {{ color: "text.primary" }}/>
+                <Tab value="threads" label="Threads" sx = {{ color: "text.primary" }}/>
+                <Tab value="comments" label="Comments" sx = {{ color: "text.primary" }}/>
             </Tabs>
             <List>
                 {filteredContent.map((item) => (

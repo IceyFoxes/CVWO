@@ -17,7 +17,6 @@ import { useAuth } from "../components/contexts/AuthContext";
 import { useAlert } from "../components/contexts/AlertContext";
 import { useRefresh } from "../components/contexts/RefreshContext";
 import { useModal } from "../components/hooks/useModal";
-import { inputStyles } from "../components/shared/Styles";
 import { Thread } from "./HomePage";
 
 export interface Comment {
@@ -77,7 +76,7 @@ const CommentItem: React.FC<{ comment: Comment }> = ({ comment }) => {
             </Box>
 
             {showChildren && (
-                <Box sx={{ paddingLeft: 2 }}>
+                <Box sx={{ paddingLeft: 2, paddingTop: 2 }}>
                     {comment.children.map((child) => (
                         <CommentItem key={child.id} comment={child} />
                     ))}
@@ -151,88 +150,236 @@ const ThreadDetails: React.FC = () => {
         }
     };
 
-    const commentTree = useMemo(() => buildCommentTree(comments), [comments]);
+    const sortedComments = useMemo(() => {
+        const sorted = [...comments];
+        sorted.sort((a, b) => {
+            switch (sortBy) {
+                case "createdAt":
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                case "likes":
+                    return b.likesCount - a.likesCount;
+                case "dislikes":
+                    return b.dislikesCount - a.dislikesCount;
+                default:
+                    return 0;
+            }
+        });
+        return sorted;
+    }, [comments, sortBy]);
+
+    const commentTree = useMemo(() => buildCommentTree(sortedComments), [sortedComments]);
 
     if (error) return <Typography color="error">{error}</Typography>;
     if (!thread) return <Loader />;
 
     return (
         <Layout>
+            {/* Go to Parent Thread Button */}
             {thread.parentId && (
                 <PrimaryButton
                     variant="outlined"
                     color="primary"
                     onClick={navigateToParent}
-                    style={{ marginBottom: "16px" }}
+                    sx={{
+                        marginBottom: 2,
+                        fontSize: { xs: "0.875rem", sm: "1rem" }, // Responsive font size
+                        padding: { xs: "6px 12px", sm: "8px 16px" },
+                    }}
                 >
                     Go to Parent Thread
                 </PrimaryButton>
             )}
 
-            <Box>
-                <Typography variant="h4">{thread.title}</Typography>
-                <Typography variant="body1">{thread.content}</Typography>
+            {/* Thread Content */}
+            <Box
+                sx={{
+                    backgroundColor: (theme) => theme.palette.background.paper,
+                    borderRadius: "8px",
+                    padding: { xs: 2, sm: 4 },
+                    boxShadow: 3,
+                    marginBottom: 4,
+                }}
+            >
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between", 
+                        alignItems: "center", 
+                        flexWrap: "wrap", 
+                        gap: 2, 
+                        marginBottom: 2,
+                    }}
+                >
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            fontWeight: "bold",
+                            fontSize: { xs: "1.5rem", sm: "2rem" },
+                        }}
+                    >
+                        {thread.title}
+                    </Typography>
+                    {username && (
+                        <SaveUnsave threadId={id}/>
+                    )}
+                </Box>
 
-                <Typography variant="caption">
+                <Typography
+                    variant="body1"
+                    sx={{
+                        marginBottom: 2,
+                        fontSize: { xs: "0.875rem", sm: "1rem" },
+                        color: "text.primary",
+                    }}
+                >
+                    {thread.content}
+                </Typography>
+
+                <Typography
+                    variant="caption"
+                    sx={{
+                        display: "block",
+                        marginBottom: 2,
+                        color: (theme) => theme.palette.text.primary,
+                    }}
+                >
                     Posted by{" "}
                     <Link
                         to={`/profile/${thread.author}`}
-                        style={{ textDecoration: "none", color: "inherit" }}
+                        style={{
+                            textDecoration: "none",
+                            color: "inherit",
+                        }}
                     >
                         {thread.author}
                     </Link>{" "}
                     <Timestamp date={thread.createdAt} />
                 </Typography>
 
-                <LikesDislikes threadId={id} />
+                {/* Likes and Save Buttons */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        gap: 2,
+                        alignItems: "center",
+                        marginBottom: 2,
+                    }}
+                >
+                    <LikesDislikes threadId={id} />
+                </Box>
 
-                {username && <SaveUnsave threadId={id} />}
-
+                {/* Edit and Delete Buttons */}
                 {authorized && (
-                    <Box>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 2,
+                            marginTop: 2,
+                        }}
+                    >
                         <PrimaryButton onClick={openModal}>Edit</PrimaryButton>
                         <UpdateThread open={isOpen} onClose={closeModal} threadId={id} />
                         <DeleteThread threadId={id} authorized={authorized} />
                     </Box>
                 )}
+            </Box>
 
-                <Box sx={{ marginTop: 4 }}>
+            {/* Comments Section */}
+            <Box
+                sx={{
+                    marginTop: 4,
+                    backgroundColor: (theme) => theme.palette.background.default,
+                    borderRadius: "8px",
+                    padding: { xs: 2, sm: 4 },
+                    boxShadow: 2,
+                }}
+            >
+                {/* Search and Sort */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 2,
+                    }}
+                >
                     <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
                     <SortMenu
                         sortBy={sortBy}
-                        onSortChange={(field) => setSortBy(field as "createdAt" | "likes" | "dislikes")}
+                        onSortChange={(field) =>
+                            setSortBy(field as "createdAt" | "likes" | "dislikes")
+                        }
+                        excludedOptions={["comments"]}
                     />
+                </Box>
 
-                    {showCommentBox && (
-                        <Box sx={{ marginBottom: 4 }}>
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={4}
-                                value={commentContent}
-                                onChange={(e) => setCommentContent(e.target.value)}
-                                placeholder="Write your comment here..."
-                                sx={inputStyles}
-                            />
-                            <PrimaryButton onClick={handleCommentSubmit} sx={{ marginTop: 2 }}>
-                                Submit Comment
-                            </PrimaryButton>
-                        </Box>
-                    )}
+                {/* Add Comment Section */}
+                {showCommentBox && (
+                    <Box sx={{ marginBottom: 4 }}>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={4}
+                            value={commentContent}
+                            onChange={(e) => setCommentContent(e.target.value)}
+                            placeholder="Write your comment here..."
+                            sx={{
+                                marginBottom: 2,
+                                backgroundColor: "background.paper",
+                                borderRadius: "4px",
+                                boxShadow: 1,
+                            }}
+                        />
+                        <PrimaryButton
+                            onClick={handleCommentSubmit}
+                            sx={{
+                                fontSize: { xs: "0.875rem", sm: "1rem" },
+                            }}
+                        >
+                            Submit Comment
+                        </PrimaryButton>
+                    </Box>
+                )}
 
-                    <PrimaryButton onClick={() => setShowCommentBox(!showCommentBox)}>
-                        {showCommentBox ? "Cancel Comment" : "Add Comment"}
-                    </PrimaryButton>
+                {/* Toggle Comment Box Button */}
+                <PrimaryButton
+                    onClick={() => setShowCommentBox(!showCommentBox)}
+                    sx={{
+                        marginBottom: 4,
+                        fontSize: { xs: "0.875rem", sm: "1rem" },
+                    }}
+                >
+                    {showCommentBox ? "Cancel Comment" : "Add Comment"}
+                </PrimaryButton>
 
-                    <Typography variant="h6" sx={{ marginTop: 4, marginBottom: 2 }}>
-                        Comments
-                    </Typography>
+                {/* Comments Title */}
+                <Typography
+                    variant="h6"
+                    sx={{
+                        marginTop: 4,
+                        marginBottom: 2,
+                        fontWeight: "bold",
+                        fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                    }}
+                >
+                    Comments
+                </Typography>
+
+                {/* Comments */}
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, // Responsive grid
+                        gap: 2,
+                    }}
+                >
                     {commentTree.map((comment) => (
                         <CommentItem key={comment.id} comment={comment} />
                     ))}
                 </Box>
             </Box>
         </Layout>
+
     );
 };
 

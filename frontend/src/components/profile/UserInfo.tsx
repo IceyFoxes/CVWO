@@ -13,7 +13,7 @@ const UserInfo: React.FC<UserInfoProps> = ({ username, joinDate, role, bio }) =>
         <Box sx={{ padding: 2 }}>
             <Typography variant="h4">{username}</Typography>
             <Typography variant="body1">Joined: {new Date(joinDate).toLocaleDateString()}</Typography>
-            <Typography variant="body2" color="textSecondary">
+            <Typography variant="body2">
                 Role: {role}
             </Typography>
             <Typography variant="body1" sx={{ marginTop: 2 }}>

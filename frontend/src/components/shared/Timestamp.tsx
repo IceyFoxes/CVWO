@@ -35,7 +35,7 @@ const Timestamp: React.FC<TimestampProps> = ({ date }) => {
     };
 
     return (
-        <Typography variant="body2" color="textSecondary">
+        <Typography variant="caption" color="text.primary">
             {getRelativeTime(date)}
         </Typography>
     );

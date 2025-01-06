@@ -2,7 +2,7 @@ import React, { useState, ReactNode, useMemo } from "react";
 import { createContextProvider } from "./createContext";
 import CustomAlert from "../shared/Alert";
 
-type AlertSeverity = "success" | "error" | "info" | "warning";
+export type AlertSeverity = "success" | "error" | "info" | "warning";
 
 interface AlertContextProps {
     showAlert: (message: string, severity: AlertSeverity) => void;

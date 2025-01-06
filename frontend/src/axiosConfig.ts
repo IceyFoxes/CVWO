@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 
 const axiosInstance = axios.create({
     baseURL: process.env.REACT_APP_API_URL,
-    timeout: 10000,
+    timeout: 30000, //backend takes 30 - 60 seconds to wake up
     headers: {
         "Content-Type": "application/json",
     },
@@ -35,9 +35,9 @@ axiosInstance.interceptors.response.use(
           let errorMessage = `Response Error: ${status}`;
           
           if (data && typeof data === "object" && "message" in data) {
-              errorMessage += ` - ${data.message}`;
+              errorMessage +=  - `${data.message}`;
           } else {
-              errorMessage += ` - ${error.response.statusText}`;
+              errorMessage +=  - `${error.response.statusText}`;
           }
           console.error(errorMessage);
         } else if (error.request) {

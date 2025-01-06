@@ -32,18 +32,23 @@ func RegisterRoutes(router *gin.Engine, db *sql.DB) {
 
 	// Group routes for interactions
 	interactionRoutes := router.Group("/threads/:id")
-	interactionRoutes.Use(middleware.AuthMiddleware())
 	{
 		interactionRoutes.GET("/likestate", func(c *gin.Context) { controllers.GetInteractionState(c, db) })
 		interactionRoutes.GET("/likes", func(c *gin.Context) { controllers.GetLikesCount(c, db) })
 		interactionRoutes.GET("/dislikes", func(c *gin.Context) { controllers.GetDislikesCount(c, db) })
 		interactionRoutes.GET("/savestate", func(c *gin.Context) { controllers.GetSaveState(c, db) })
-		interactionRoutes.POST("/like", func(c *gin.Context) { controllers.LikeThread(c, db) })
-		interactionRoutes.POST("/dislike", func(c *gin.Context) { controllers.DislikeThread(c, db) })
-		interactionRoutes.POST("/save", func(c *gin.Context) { controllers.SaveThread(c, db) })
-		interactionRoutes.DELETE("/like", func(c *gin.Context) { controllers.RemoveLike(c, db) })
-		interactionRoutes.DELETE("/dislike", func(c *gin.Context) { controllers.RemoveDislike(c, db) })
-		interactionRoutes.DELETE("/save", func(c *gin.Context) { controllers.UnsaveThread(c, db) })
+	}
+
+	// Protected Interaction Routes
+	protectedInteractionRoutes := router.Group("/threads/:id")
+	protectedInteractionRoutes.Use(middleware.AuthMiddleware())
+	{
+		protectedInteractionRoutes.POST("/like", func(c *gin.Context) { controllers.LikeThread(c, db) })
+		protectedInteractionRoutes.POST("/dislike", func(c *gin.Context) { controllers.DislikeThread(c, db) })
+		protectedInteractionRoutes.POST("/save", func(c *gin.Context) { controllers.SaveThread(c, db) })
+		protectedInteractionRoutes.DELETE("/like", func(c *gin.Context) { controllers.RemoveLike(c, db) })
+		protectedInteractionRoutes.DELETE("/dislike", func(c *gin.Context) { controllers.RemoveDislike(c, db) })
+		protectedInteractionRoutes.DELETE("/save", func(c *gin.Context) { controllers.UnsaveThread(c, db) })
 	}
 
 	// Group routes for users

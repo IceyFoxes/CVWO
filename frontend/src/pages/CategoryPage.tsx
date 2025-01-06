@@ -103,20 +103,41 @@ const CategoryPage: React.FC = () => {
 
     return (
         <Layout>
-            <Box sx={{ padding: 4 }}>
+            <Box sx={{ padding: { xs: 2, sm: 4 } }}>
                 {error && (
-                    <Typography color="error" sx={{ marginBottom: 2 }}>
+                    <Typography
+                        color="error"
+                        sx={{
+                            marginBottom: 2,
+                            textAlign: "center",
+                            fontSize: { xs: "1rem", sm: "1.25rem" }, // Responsive font size
+                        }}
+                    >
                         {error}
                     </Typography>
                 )}
+
                 {loading ? (
                     <Loader />
                 ) : (
                     <>
-                        <Typography variant="h4" gutterBottom>
+                        {/* Category Title */}
+                        <Typography
+                            variant="h4"
+                            gutterBottom
+                            sx={{
+                                fontSize: { xs: "1.5rem", sm: "2rem" },
+                                textAlign: "center",
+                                fontWeight: "bold",
+                            }}
+                        >
                             {category ?? "All Threads"}
                         </Typography>
+
+                        {/* Search Bar */}
                         <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+
+                        {/* Tag Groups */}
                         {Object.entries(tagGroups).map(([tag, threads]) => {
                             const { page, sortBy } = paginationState[tag] || { page: 1, sortBy: "createdAt" };
                             const filteredThreads = threads.filter(
@@ -129,14 +150,49 @@ const CategoryPage: React.FC = () => {
 
                             return (
                                 <Box key={tag} sx={{ marginBottom: 4 }}>
-                                    <Typography variant="h5" gutterBottom>
+                                    {/* Tag Title */}
+                                    <Typography
+                                        variant="h5"
+                                        gutterBottom
+                                        sx={{
+                                            fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                                            fontWeight: "bold",
+                                            marginBottom: 2,
+                                            textAlign: { xs: "center", sm: "left" },
+                                            backgroundColor: (theme) => theme.palette.primary.light,
+                                            color: (theme) => theme.palette.primary.contrastText,
+                                            borderRadius: "8px",
+                                            padding: { xs: "8px 16px", sm: "12px 24px" },
+                                        }}
+                                    >
                                         {tag}
                                     </Typography>
-                                    <SortMenu
-                                        sortBy={sortBy as SortField}
-                                        onSortChange={(field) => handleSortChange(tag, field)}
-                                    />
-                                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+
+                                    {/* Sort Menu */}
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            marginBottom: 2,
+                                            paddingX: { xs: 1, sm: 2 },
+                                        }}
+                                    >
+                                        <SortMenu
+                                            sortBy={sortBy as SortField}
+                                            onSortChange={(field) => handleSortChange(tag, field)}
+                                        />
+                                    </Box>
+
+                                    {/* Threads Grid */}
+                                    <Box
+                                        sx={{
+                                            display: "grid",
+                                            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" }, // Responsive grid
+                                            gap: 2,
+                                            padding: 2,
+                                        }}
+                                    >
                                         {paginatedThreads.map((thread) => (
                                             <CustomCard
                                                 key={thread.id}
@@ -152,22 +208,35 @@ const CategoryPage: React.FC = () => {
                                                 metadata={{
                                                     author: thread.author,
                                                     likes: thread.likesCount,
+                                                    dislikes: thread.dislikesCount,
                                                     comments: thread.commentsCount,
+                                                    createdAt: thread.createdAt,
                                                 }}
                                             />
                                         ))}
                                     </Box>
-                                    <Pagination
-                                        currentPage={page}
-                                        totalPages={Math.ceil(filteredThreads.length / itemsPerPage)}
-                                        onPageChange={(newPage) => handlePageChange(tag, newPage)}
-                                    />
+
+                                    {/* Pagination */}
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            justifyContent: "center",
+                                            marginTop: 2,
+                                        }}
+                                    >
+                                        <Pagination
+                                            currentPage={page}
+                                            totalPages={Math.ceil(filteredThreads.length / itemsPerPage)}
+                                            onPageChange={(newPage) => handlePageChange(tag, newPage)}
+                                        />
+                                    </Box>
                                 </Box>
                             );
                         })}
                     </>
                 )}
             </Box>
+
         </Layout>
     );
 };

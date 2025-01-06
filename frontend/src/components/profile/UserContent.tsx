@@ -44,7 +44,7 @@ const ContentItem: React.FC<ContentItemProps> = ({ id, title, content, author, p
         </Typography>
 
         {/* Metadata */}
-        <Typography variant="body2" color="textSecondary">
+        <Typography variant="body2" color="text.primary">
             <Link
             to={profileLink}
             style={{ textDecoration: "none", color: "inherit", fontWeight: "bold" }}

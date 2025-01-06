@@ -8,7 +8,6 @@ import Loader from "../components/shared/Loader";
 import Pagination from "../components/widgets/Pagination";
 import SortMenu from "../components/widgets/SortMenu";
 import CustomCard from "../components/shared/Card";
-import { listItemStyles } from "../components/shared/Styles";
 import { useRefresh } from "../components/contexts/RefreshContext";
 
 export interface Thread {
@@ -132,21 +131,57 @@ const HomePage: React.FC = () => {
                                     <Box
                                         component={Link}
                                         to={`/category/${category.name}`}
-                                        sx={{ ...listItemStyles, marginBottom: 2 }}
+                                        sx={{
+                                            display: "block",
+                                            marginBottom: 2,
+                                            textDecoration: "none",
+                                            padding: { xs: "8px 16px", sm: "12px 24px" },
+                                            backgroundColor: (theme) => theme.palette.primary.main,
+                                            color: (theme) => theme.palette.primary.contrastText,
+                                            borderRadius: "8px",
+                                            "&:hover": {
+                                                backgroundColor: (theme) => theme.palette.primary.dark,
+                                            },
+                                        }}
                                     >
-                                        <Typography variant="h5">{category.name}</Typography>
+                                        <Typography
+                                            variant="h5"
+                                            sx={{
+                                                fontWeight: "bold",
+                                                fontSize: { xs: "1rem", sm: "1.25rem", md: "1.5rem" },
+                                            }}
+                                        >
+                                            {category.name}
+                                        </Typography>
                                     </Box>
 
                                     {/* Sort Menu */}
-                                    <SortMenu
-                                        sortBy={sortStates[category.name] || "createdAt"}
-                                        onSortChange={(sortField) =>
-                                            handleSortChange(category.name, sortField as SortField)
-                                        }
-                                    />
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            marginBottom: 2,
+                                            paddingX: { xs: 1, sm: 2 },
+                                        }}
+                                    >
+                                        <SortMenu
+                                            sortBy={sortStates[category.name] || "createdAt"}
+                                            onSortChange={(sortField) =>
+                                                handleSortChange(category.name, sortField as SortField)
+                                            }
+                                        />
+                                    </Box>
 
                                     {/* Threads under the category */}
-                                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                                    <Box
+                                        sx={{
+                                            display: "grid",
+                                            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" }, // Responsive columns
+                                            gap: 2,
+                                            padding: 2,
+                                        }}
+                                    >
                                         {(threadsByCategory[category.name] || []).map((thread) => (
                                             <CustomCard
                                                 key={thread.id}
@@ -172,17 +207,35 @@ const HomePage: React.FC = () => {
                                     </Box>
 
                                     {/* Pagination */}
-                                    <Pagination
-                                        currentPage={pageStates[category.name] || 1}
-                                        totalPages={totalPagesByCategory[category.name] || 1}
-                                        onPageChange={(page) => handlePageChange(category.name, page)}
-                                    />
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            justifyContent: "center",
+                                            marginTop: 2,
+                                        }}
+                                    >
+                                        <Pagination
+                                            currentPage={pageStates[category.name] || 1}
+                                            totalPages={totalPagesByCategory[category.name] || 1}
+                                            onPageChange={(page) => handlePageChange(category.name, page)}
+                                        />
+                                    </Box>
                                 </Box>
                             ))
                         ) : (
-                            <Typography>No categories found.</Typography>
+                            <Typography
+                                sx={{
+                                    textAlign: "center",
+                                    color: (theme) => theme.palette.text.primary,
+                                    fontSize: { xs: "1rem", sm: "1.25rem" },
+                                    marginTop: 4,
+                                }}
+                            >
+                                No categories found.
+                            </Typography>
                         )}
                     </>
+
                 )}
             </Box>
         </Layout>
