@@ -5,10 +5,16 @@ import Sidebar from "./Sidebar";
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const theme = useTheme();
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm")); // Detect if the screen is small
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down("md")); // Detect if the screen is small
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column" }}>
+        <Box 
+            sx={{ 
+                display: "flex", 
+                flexDirection: "column" ,
+                minHeight: "100vh",
+                width: "100%",
+            }}>
             {/* Header */}
             <Header />
 
@@ -42,6 +48,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     sx={{
                         flexGrow: 1,
                         padding: { xs: 2, sm: 4 },
+                        width: "100%",
+                        flexWrap: "wrap",
                     }}
                 >
                     {children}

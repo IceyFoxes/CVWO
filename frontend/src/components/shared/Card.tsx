@@ -30,6 +30,8 @@ const CustomCard: React.FC<CustomCardProps> = ({ title, content, footer, linkTo,
                 <Box
                     sx={{
                         padding: 2,
+                        display: "flex",
+                        flexWrap: "wrap",
                         backgroundColor: (theme) => theme.palette.primary.main,
                         color: (theme) => theme.palette.primary.contrastText,
                         borderBottom: "1px solid #ddd",

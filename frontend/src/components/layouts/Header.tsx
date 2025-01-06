@@ -39,6 +39,7 @@ const Header: React.FC = () => {
             position="sticky"
             color="transparent"
             sx={{
+                width: "100%",
                 backgroundColor: theme.palette.primary.main,
                 padding: { xs: "8px 16px", sm: "16px 32px" },
             }}

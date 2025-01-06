@@ -17,14 +17,14 @@ export const buttonStyles: SxProps<Theme> = {
 export const cardStyles: SxProps<Theme> = {
     display: "flex",
     flexDirection: "column",
-    height: "100%",
+    flexWrap: "wrap",
     cursor: "pointer",
-    borderRadius: "8px", // Rounded corners
-    boxShadow: 3, // Default shadow
+    borderRadius: "8px", 
+    boxShadow: 3, 
     transition: "box-shadow 0.3s ease, transform 0.2s ease", // Smooth hover effects
     "&:hover": {
-        boxShadow: 6, // Enhanced shadow on hover
-        transform: "scale(1.02)", // Slight scale effect
+        boxShadow: 6, 
+        transform: "scale(1.02)", 
     },
 };
 
@@ -62,17 +62,8 @@ export const modalStyles: SxProps<Theme> = {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: 400,
     bgcolor: "background.paper",
     boxShadow: 24,
     borderRadius: 2,
     padding: 4,
 };
-
-export const sidebarContainer: SxProps<Theme> = {
-    width: { xs: '100%', sm: 250 },
-    borderRight: "1px solid #ddd",
-};
-
-
-    
