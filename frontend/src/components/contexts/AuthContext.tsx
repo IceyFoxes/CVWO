@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setIsLoggedIn(true);
             }
         }
-    }, []);
+    }, [handleTokenExpiry]);
 
     const login = (username: string, token: string) => {
         if (handleTokenExpiry(token)) {
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const value = useMemo(
         () => ({ isLoggedIn, username, login, logout }),
-        [isLoggedIn, username]
+        [isLoggedIn, username, login]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -37,7 +37,7 @@ const UpdateThread: React.FC<{ open: boolean; onClose: () => void; threadId: str
         };
 
         fetchThreadDetails();
-    }, [open, threadId]);
+    }, [showAlert, open, threadId]);
 
     const handleSubmit = async () => {
         if (!title.trim() || !content.trim()) {
