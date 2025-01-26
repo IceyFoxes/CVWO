@@ -10,8 +10,11 @@ const Timestamp: React.FC<TimestampProps> = ({ date }) => {
         const now = new Date(); 
         const targetDate = new Date(timestamp); 
 
-        const timezoneOffsetInSeconds = now.getTimezoneOffset() * 60;
-        const nowUTCInSeconds = Math.floor(now.getTime() / 1000) - timezoneOffsetInSeconds;
+        // const timezoneOffsetInSeconds = now.getTimezoneOffset() * 60;
+        // const nowUTCInSeconds = Math.floor(now.getTime() / 1000) - timezoneOffsetInSeconds;
+        // Not sure about my computer's local time, but I need this set of code to sync my time
+        
+        const nowUTCInSeconds = Math.floor(now.getTime() / 1000);
         const diffInSeconds = nowUTCInSeconds - Math.floor(targetDate.getTime() / 1000);
 
         const thresholds = {
