@@ -2,8 +2,8 @@ import React, { useContext, useState } from "react";
 import { Box, Drawer, useMediaQuery, useTheme } from "@mui/material";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
-import lightBackground from "./lightBackground.png";
-import darkBackground from "./darkBackground.png";
+import lightBackground from "./lightBackground.webp";
+import darkBackground from "./darkBackground.webp";
 import { ColorModeContext } from "../../theme/ColorMode";
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -16,7 +16,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const toggleSidebar = () => {
         setIsSidebarOpen((prev) => !prev);
     };
-
+    
     return (
         <Box
             sx={{
@@ -43,11 +43,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     variant={isSmallScreen ? "temporary" : "persistent"} // Temporary for small screens
                     sx={{
                         "& .MuiDrawer-paper": {
-                            width: isSmallScreen ? "80%" : "20%", // Use percentage-based width
+                            width: isSmallScreen ? "80%" : "20%", 
                             backgroundColor: theme.palette.background.paper,
-                            padding: "2%", // Use percentage-based padding
-                            top: "10%", // Adjust for header height as percentage
-                            ...(isSmallScreen && { height: "100vh", top: 0 }), // Full height for small screens
+                            padding: "2%", 
+                            top: "10%", 
+                            ...(isSmallScreen && { height: "100vh", top: 0 }), 
                         },
                     }}
                 >
@@ -58,7 +58,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <Box
                     sx={{
                         flexGrow: 1,
-                        padding: { xs: "4%", sm: "3%" }, // Use percentage-based padding
+                        padding: { xs: "4%", sm: "3%" },
                         marginLeft: isSmallScreen ? 0 : (isSidebarOpen ? "20%" : 0), // Adjust margin for persistent sidebar
                         transition: theme.transitions.create("margin-left", {
                             duration: theme.transitions.duration.standard,

@@ -80,12 +80,12 @@ func FetchThreads(db *sql.DB, searchQuery, sortBy string, limit, offset int, tag
 			categories.name AS category,
 			COALESCE(tags.name, '') AS tag
 		FROM threads
-		LEFT JOIN users ON threads.user_id = users.id
+		INNER JOIN users ON threads.user_id = users.id
 		LEFT JOIN likes ON threads.id = likes.thread_id
 		LEFT JOIN dislikes ON threads.id = dislikes.thread_id
 		LEFT JOIN threads AS comments ON threads.id = comments.parent_id
-		LEFT JOIN categories ON threads.category_id = categories.id
-		LEFT JOIN tags ON threads.tag_id = tags.id
+		INNER JOIN categories ON threads.category_id = categories.id
+		INNER JOIN tags ON threads.tag_id = tags.id
 		WHERE threads.title IS NOT NULL
 		AND (threads.title LIKE $1 OR threads.content LIKE $2)
 		%s
@@ -147,7 +147,7 @@ func FetchThreadByID(db *sql.DB, threadID int) (*Thread, error) {
 			categories.name AS category,
 			tags.name AS tag
 		FROM threads
-		LEFT JOIN users ON threads.user_id = users.id
+		INNER JOIN users ON threads.user_id = users.id
 		LEFT JOIN likes ON threads.id = likes.thread_id
 		LEFT JOIN dislikes ON threads.id = dislikes.thread_id
 		LEFT JOIN threads AS comments ON threads.id = comments.parent_id
@@ -432,8 +432,8 @@ func GetThreadCount(db *sql.DB, searchQuery, tag, category string) int {
 	query := `
 		SELECT COUNT(*) 
 		FROM threads 
-		LEFT JOIN categories ON threads.category_id = categories.id
-		LEFT JOIN tags ON threads.tag_id = tags.id
+		INNER JOIN categories ON threads.category_id = categories.id
+		INNER JOIN tags ON threads.tag_id = tags.id
 		WHERE threads.title IS NOT NULL 
 		AND (threads.title ILIKE $1 OR threads.content ILIKE $2)
 	`
