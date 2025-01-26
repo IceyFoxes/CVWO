@@ -5,8 +5,8 @@ import { DangerButton, PrimaryButton } from "./Buttons";
 interface ModalProps {
     open: boolean;
     title: string;
-    content?: string; // Optional for cases where content is handled through children
-    children?: React.ReactNode; // Add this line to include children support
+    content?: string;
+    children?: React.ReactNode; 
     onClose: () => void;
     onConfirm?: () => void;
 }
@@ -16,21 +16,34 @@ const CustomModal: React.FC<ModalProps> = ({ open, title, content, children, onC
         <Modal open={open} onClose={onClose}>
             <Box
                 sx={{
-                    width: 400,
-                    margin: "100px auto",
-                    padding: 2,
+                    width: { xs: "90%", sm: "75%", md: "50%" }, 
+                    maxWidth: "500px", 
+                    margin: "auto",
+                    marginTop: { xs: "10%", sm: "5%" }, 
+                    padding: 3,
                     bgcolor: "background.paper",
-                    borderRadius: 1,
+                    borderRadius: 2,
+                    boxShadow: 24,
+                    outline: "none",
                 }}
             >
-                <Typography variant="h6">{title}</Typography>
+                <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
+                    {title}
+                </Typography>
                 {content && (
-                    <Typography variant="body2" sx={{ my: 2 }}>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
                         {content}
                     </Typography>
                 )}
                 {children} {/* Render children here */}
-                <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: 2,
+                        mt: 3,
+                    }}
+                >
                     <DangerButton onClick={onClose}>
                         Cancel
                     </DangerButton>
@@ -46,4 +59,3 @@ const CustomModal: React.FC<ModalProps> = ({ open, title, content, children, onC
 };
 
 export default CustomModal;
-

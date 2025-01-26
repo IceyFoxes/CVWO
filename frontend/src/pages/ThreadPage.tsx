@@ -219,7 +219,7 @@ const ThreadDetails: React.FC = () => {
                     >
                         {thread.title}
                     </Typography>
-                    {username && (
+                    {username && thread.title && (
                         <SaveUnsave threadId={id}/>
                     )}
                 </Box>

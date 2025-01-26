@@ -1,11 +1,10 @@
 import React, { useState, ReactNode, useMemo } from "react";
 import { createContextProvider } from "./createContext";
 import CustomAlert from "../shared/Alert";
-
-export type AlertSeverity = "success" | "error" | "info" | "warning";
+import { AlertColor } from "@mui/material";
 
 interface AlertContextProps {
-    showAlert: (message: string, severity: AlertSeverity) => void;
+    showAlert: (message: string, severity: AlertColor) => void;
 }
 
 const initialAlertState: AlertContextProps = {
@@ -18,11 +17,11 @@ export const { Context: AlertContext, useGenericContext: useAlert } =
 export const AlertProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [alertOpen, setAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
-    const [alertSeverity, setAlertSeverity] = useState<AlertSeverity>("info");
+    const [alertColor, setAlertColor] = useState<AlertColor>("info");
 
-    const showAlert = (message: string, severity: AlertSeverity) => {
+    const showAlert = (message: string, severity: AlertColor) => {
         setAlertMessage(message);
-        setAlertSeverity(severity);
+        setAlertColor(severity);
         setAlertOpen(true);
     };
 
@@ -36,7 +35,7 @@ export const AlertProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             <CustomAlert
                 open={alertOpen}
                 message={alertMessage}
-                severity={alertSeverity}
+                severity={alertColor}
                 onClose={handleClose}
             />
         </AlertContext.Provider>

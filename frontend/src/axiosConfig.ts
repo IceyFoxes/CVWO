@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 
 const axiosInstance = axios.create({
     baseURL: process.env.REACT_APP_API_URL,
-    timeout: 30000, //backend takes 30 - 60 seconds to wake up
+    timeout: 60000, //backend takes 60 seconds to wake up
     headers: {
         "Content-Type": "application/json",
     },

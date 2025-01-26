@@ -6,9 +6,6 @@ export const buttonStyles: SxProps<Theme> = {
         padding: "8px 16px",
         borderRadius: "8px",
     },
-    "&:hover": {
-        boxShadow: "none", 
-    },
     "&:active": {
         transform: "scale(0.98)",
     },

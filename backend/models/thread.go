@@ -13,6 +13,7 @@ type Thread struct {
 	Content       string  `json:"content"`
 	Category      *string `json:"category,omitempty"` // Nullable category
 	Author        string  `json:"author"`
+	ParentAuthor  *string `json:"parentAuthor,omitempty"` // Nullable parent author
 	CreatedAt     string  `json:"createdAt"`
 	UserID        int     `json:"userId"`
 	ParentID      *int    `json:"parentId,omitempty"` // Nullable parent thread
@@ -79,12 +80,12 @@ func FetchThreads(db *sql.DB, searchQuery, sortBy string, limit, offset int, tag
 			categories.name AS category,
 			COALESCE(tags.name, '') AS tag
 		FROM threads
-		LEFT JOIN users ON threads.user_id = users.id
+		INNER JOIN users ON threads.user_id = users.id
 		LEFT JOIN likes ON threads.id = likes.thread_id
 		LEFT JOIN dislikes ON threads.id = dislikes.thread_id
 		LEFT JOIN threads AS comments ON threads.id = comments.parent_id
-		LEFT JOIN categories ON threads.category_id = categories.id
-		LEFT JOIN tags ON threads.tag_id = tags.id
+		INNER JOIN categories ON threads.category_id = categories.id
+		INNER JOIN tags ON threads.tag_id = tags.id
 		WHERE threads.title IS NOT NULL
 		AND (threads.title LIKE $1 OR threads.content LIKE $2)
 		%s
@@ -131,29 +132,29 @@ func FetchThreadByID(db *sql.DB, threadID int) (*Thread, error) {
 	var thread Thread
 
 	query := `
-	SELECT 
-		threads.id, 
-		threads.title, 
-		threads.content, 
-		users.username AS author, 
-		threads.created_at, 
-		threads.user_id, 
-		threads.parent_id, 
-		COUNT(DISTINCT likes.id) AS likes_count,
-		COUNT(DISTINCT dislikes.id) AS dislikes_count,
-		COUNT(DISTINCT comments.id) AS comments_count,
-		threads.depth,
-		categories.name AS category,
-		tags.name AS tag
-	FROM threads
-	LEFT JOIN users ON threads.user_id = users.id
-	LEFT JOIN likes ON threads.id = likes.thread_id
-	LEFT JOIN dislikes ON threads.id = dislikes.thread_id
-	LEFT JOIN threads AS comments ON threads.id = comments.parent_id
-	LEFT JOIN categories ON threads.category_id = categories.id
-	LEFT JOIN tags ON threads.tag_id = tags.id
-	WHERE threads.id = $1
-	GROUP BY threads.id, users.username, categories.name, tags.name
+		SELECT 
+			threads.id, 
+			threads.title, 
+			threads.content, 
+			users.username AS author, 
+			threads.created_at, 
+			threads.user_id, 
+			threads.parent_id, 
+			COUNT(DISTINCT likes.id) AS likes_count,
+			COUNT(DISTINCT dislikes.id) AS dislikes_count,
+			COUNT(DISTINCT comments.id) AS comments_count,
+			threads.depth,
+			categories.name AS category,
+			tags.name AS tag
+		FROM threads
+		INNER JOIN users ON threads.user_id = users.id
+		LEFT JOIN likes ON threads.id = likes.thread_id
+		LEFT JOIN dislikes ON threads.id = dislikes.thread_id
+		LEFT JOIN threads AS comments ON threads.id = comments.parent_id
+		LEFT JOIN categories ON threads.category_id = categories.id
+		LEFT JOIN tags ON threads.tag_id = tags.id
+		WHERE threads.id = $1
+		GROUP BY threads.id, users.username, categories.name, tags.name
 	`
 
 	err := db.QueryRow(query, threadID).Scan(
@@ -429,12 +430,12 @@ func CreateComment(db *sql.DB, content string, userID int, parentID int, depth i
 // GetThreadCount retrieves the count of threads based on search criteria
 func GetThreadCount(db *sql.DB, searchQuery, tag, category string) int {
 	query := `
-	SELECT COUNT(*) 
-	FROM threads 
-	LEFT JOIN categories ON threads.category_id = categories.id
-	LEFT JOIN tags ON threads.tag_id = tags.id
-	WHERE threads.title IS NOT NULL 
-	AND (threads.title ILIKE $1 OR threads.content ILIKE $2)
+		SELECT COUNT(*) 
+		FROM threads 
+		INNER JOIN categories ON threads.category_id = categories.id
+		INNER JOIN tags ON threads.tag_id = tags.id
+		WHERE threads.title IS NOT NULL 
+		AND (threads.title ILIKE $1 OR threads.content ILIKE $2)
 	`
 
 	var conditions []string

@@ -36,6 +36,7 @@ const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, 
                 const tags = await fetchTags();
                 setTagOptions(Array.isArray(tags) ? tags : []);
             } catch (error) {
+                showAlert("Failed to fetch categories or tags. Please try again.", "error");
                 console.error("Failed to fetch data:", error);
             }
         };
@@ -117,7 +118,7 @@ const CreateThread: React.FC<{ open: boolean; onClose: () => void }> = ({ open, 
                         />
                     )}
                 />
-                <PrimaryButton onClick={handleSubmit}>Create New Thread</PrimaryButton>
+                <PrimaryButton onClick={handleSubmit} disabled={!title || !content || !category || !tag}>Create New Thread</PrimaryButton>
             </Box>
         </CustomModal>
     );

@@ -40,28 +40,48 @@ func GetDislikesCount(db *sql.DB, threadID int) (int, error) {
 
 // AddLike adds a like for a thread and removes any existing dislike
 func AddLike(db *sql.DB, threadID, userID int) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	// Remove dislike
-	_, err := db.Exec("DELETE FROM dislikes WHERE thread_id = $1 AND user_id = $2", threadID, userID)
+	_, err = tx.Exec("DELETE FROM dislikes WHERE thread_id = $1 AND user_id = $2", threadID, userID)
 	if err != nil {
 		return err
 	}
 
 	// Add like
-	_, err = db.Exec("INSERT INTO likes (thread_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", threadID, userID)
-	return err
+	_, err = tx.Exec("INSERT INTO likes (thread_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", threadID, userID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // AddDislike adds a dislike for a thread and removes any existing like
 func AddDislike(db *sql.DB, threadID, userID int) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	// Remove like
-	_, err := db.Exec("DELETE FROM likes WHERE thread_id = $1 AND user_id = $2", threadID, userID)
+	_, err = db.Exec("DELETE FROM likes WHERE thread_id = $1 AND user_id = $2", threadID, userID)
 	if err != nil {
 		return err
 	}
 
 	// Add dislike
 	_, err = db.Exec("INSERT INTO dislikes (thread_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", threadID, userID)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // RemoveLike removes a like for a thread

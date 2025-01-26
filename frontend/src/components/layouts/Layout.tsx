@@ -1,55 +1,68 @@
-import React from "react";
-import { Box, useMediaQuery, useTheme } from "@mui/material";
+import React, { useContext, useState } from "react";
+import { Box, Drawer, useMediaQuery, useTheme } from "@mui/material";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import lightBackground from "./lightBackground.png";
+import darkBackground from "./darkBackground.png";
+import { ColorModeContext } from "../../theme/ColorMode";
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { mode } = useContext(ColorModeContext);
     const theme = useTheme();
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down("md")); // Detect if the screen is small
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down("md"));
+    const backgroundImage = mode === "dark" ? darkBackground : lightBackground;
+    const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+
+    const toggleSidebar = () => {
+        setIsSidebarOpen((prev) => !prev);
+    };
 
     return (
-        <Box 
-            sx={{ 
-                display: "flex", 
-                flexDirection: "column" ,
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
                 minHeight: "100vh",
                 width: "100%",
-            }}>
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+            }}
+        >
             {/* Header */}
-            <Header />
+            <Header toggleSidebar={toggleSidebar} />
 
             {/* Main Content Area */}
-            <Box
-                sx={{
-                    display: "flex",
-                    flexGrow: 1,
-                }}
-            >
-                {/* Conditionally Render Sidebar */}
-                {!isSmallScreen && (
-                    <Box
-                        sx={{
-                            width: 250,
-                            borderRight: "1px solid #ddd",
-                            backgroundColor: (theme) => theme.palette.background.paper,
-                            padding: 2,
-                            height: "calc(100vh - 100px)", // Adjust for header height
-                            overflowY: "auto",
-                            position: "sticky",
-                            top: 100,
-                        }}
-                    >
-                        <Sidebar />
-                    </Box>
-                )}
+            <Box sx={{ display: "flex", flexGrow: 1 }}>
+                {/* Sidebar */}
+                <Drawer
+                    anchor="left"
+                    open={isSidebarOpen}
+                    onClose={toggleSidebar}
+                    variant={isSmallScreen ? "temporary" : "persistent"} // Temporary for small screens
+                    sx={{
+                        "& .MuiDrawer-paper": {
+                            width: isSmallScreen ? "80%" : "20%", // Use percentage-based width
+                            backgroundColor: theme.palette.background.paper,
+                            padding: "2%", // Use percentage-based padding
+                            top: "10%", // Adjust for header height as percentage
+                            ...(isSmallScreen && { height: "100vh", top: 0 }), // Full height for small screens
+                        },
+                    }}
+                >
+                    <Sidebar />
+                </Drawer>
 
                 {/* Main Content */}
                 <Box
                     sx={{
                         flexGrow: 1,
-                        padding: { xs: 2, sm: 4 },
-                        width: "100%",
-                        flexWrap: "wrap",
+                        padding: { xs: "4%", sm: "3%" }, // Use percentage-based padding
+                        marginLeft: isSmallScreen ? 0 : (isSidebarOpen ? "20%" : 0), // Adjust margin for persistent sidebar
+                        transition: theme.transitions.create("margin-left", {
+                            duration: theme.transitions.duration.standard,
+                        }),
                     }}
                 >
                     {children}

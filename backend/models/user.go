@@ -6,14 +6,6 @@ import (
 	"log"
 )
 
-type UserScores struct {
-	UserID            int     `json:"userId"`
-	Username          string  `json:"username"`
-	ThreadsScore      float64 `json:"threadsScore"`
-	CommentsScore     float64 `json:"commentsScore"`
-	ContributionScore float64 `json:"contributionScore"`
-}
-
 type UserInfo struct {
 	UserID   int    `json:"userId"`
 	Username string `json:"username"`
@@ -22,36 +14,12 @@ type UserInfo struct {
 	Bio      string `json:"bio"`
 }
 
-type UserMetrics struct {
-	ThreadsCreated   int `json:"threadsCreated"`
-	CommentsMade     int `json:"commentsMade"`
-	LikesReceived    int `json:"likesReceived"`
-	DislikesReceived int `json:"dislikesReceived"`
-}
-
-type UserThread struct {
-	ID            int     `json:"id"`
-	Title         *string `json:"title,omitempty"`
-	Content       string  `json:"content"`
-	Author        string  `json:"author"`
-	ParentAuthor  *string `json:"parentAuthor"`
-	CreatedAt     string  `json:"createdAt"`
-	UserID        int     `json:"userId"`
-	ParentID      *int    `json:"parentId,omitempty"`
-	LikesCount    int     `json:"likesCount"`
-	DislikesCount int     `json:"dislikesCount"`
-	CommentsCount int     `json:"commentsCount"`
-}
-
-type UserActivity struct {
-	Threads  []UserThread `json:"threads"`
-	Comments []UserThread `json:"comments"` // Comments are threads with null title
-}
-
-type SavedThread struct {
-	ID        int    `json:"id"`
-	Title     string `json:"title"`
-	CreatedAt string `json:"createdAt"`
+type UserScores struct {
+	UserID            int     `json:"userId"`
+	Username          string  `json:"username"`
+	ThreadsScore      float64 `json:"threadsScore"`
+	CommentsScore     float64 `json:"commentsScore"`
+	ContributionScore float64 `json:"contributionScore"`
 }
 
 /*Contribution Score =
@@ -60,6 +28,24 @@ type SavedThread struct {
   (Comments Made × 2) +
   (Average Likes per Comment × 5) -
   (Dislikes Received × 2)*/
+
+type UserMetrics struct {
+	ThreadsCreated   int `json:"threadsCreated"`
+	CommentsMade     int `json:"commentsMade"`
+	LikesReceived    int `json:"likesReceived"`
+	DislikesReceived int `json:"dislikesReceived"`
+}
+
+type UserActivity struct {
+	Threads  []Thread `json:"threads"`
+	Comments []Thread `json:"comments"` // Comments are threads with null title
+}
+
+type SavedThread struct {
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	CreatedAt string `json:"createdAt"`
+}
 
 // Check if a user is an admin
 func IsAdmin(db *sql.DB, username string) (bool, error) {
@@ -244,18 +230,7 @@ func FetchLeaderboard(db *sql.DB) ([]UserScores, error) {
 		FROM 
 			users u
 		LEFT JOIN threads t ON u.id = t.user_id
-		LEFT JOIN (
-			SELECT thread_id, COUNT(*) AS likes 
-			FROM likes 
-			GROUP BY thread_id
-		) l ON t.id = l.thread_id
-		LEFT JOIN (
-			SELECT thread_id, COUNT(*) AS likes 
-			FROM likes 
-			GROUP BY thread_id
-		) lc ON t.id = lc.thread_id
 		LEFT JOIN dislikes d ON t.id = d.thread_id
-
 		GROUP BY u.id, u.username
 		ORDER BY contribution_score DESC;
 	`
@@ -364,22 +339,19 @@ func FetchUserActivity(db *sql.DB, username string) (*UserActivity, error) {
 			th.id, 
 			th.title, 
 			th.content, 
-			usr.username AS author, 
-			CASE 
-				WHEN th.parent_id IS NOT NULL THEN pusr.username 
-				ELSE NULL 
-			END AS parent_author, 
+			u_current.username AS author, -- Author of the current thread
 			th.created_at, 
 			th.user_id, 
 			th.parent_id, 
+			u_parent.username AS parent_author, -- Author of the parent thread
 			(SELECT COUNT(*) FROM likes WHERE thread_id = th.id) AS likes_count,
 			(SELECT COUNT(*) FROM dislikes WHERE thread_id = th.id) AS dislikes_count,
 			(SELECT COUNT(*) FROM threads WHERE parent_id = th.id) AS comments_count
 		FROM threads th
-		LEFT JOIN users usr ON th.user_id = usr.id
-		LEFT JOIN threads pth ON th.parent_id = pth.id
-		LEFT JOIN users pusr ON pth.user_id = pusr.id
-		WHERE usr.username = $1;
+		LEFT JOIN users u_current ON th.user_id = u_current.id
+		LEFT JOIN threads th_parent ON th.parent_id = th_parent.id 
+		LEFT JOIN users u_parent ON th_parent.user_id = u_parent.id 
+		WHERE u_current.username = $1;
 	`
 
 	rows, err := db.Query(query, username)
@@ -388,19 +360,29 @@ func FetchUserActivity(db *sql.DB, username string) (*UserActivity, error) {
 	}
 	defer rows.Close()
 
-	var threads []UserThread
-	var comments []UserThread
+	var threads []Thread
+	var comments []Thread
 
 	for rows.Next() {
-		var thread UserThread
+		var thread Thread
+		var parentAuthor sql.NullString
 
+		// Scan the query results
 		err := rows.Scan(
 			&thread.ID, &thread.Title, &thread.Content,
-			&thread.Author, &thread.ParentAuthor, &thread.CreatedAt, &thread.UserID, &thread.ParentID,
+			&thread.Author, &thread.CreatedAt, &thread.UserID, &thread.ParentID,
+			&parentAuthor,
 			&thread.LikesCount, &thread.DislikesCount, &thread.CommentsCount,
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		// Map `parent_author` if not null
+		if parentAuthor.Valid {
+			thread.ParentAuthor = &parentAuthor.String
+		} else {
+			thread.ParentAuthor = nil
 		}
 
 		// Categorize as thread or comment

@@ -1,23 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Box, Tabs, Tab, Typography, List } from "@mui/material";
+import { Box, Tabs, Tab, Typography, List, useTheme } from "@mui/material";
 import SearchBar from "../widgets/SearchBar";
 import SortMenu from "../widgets/SortMenu";
 import { getUserActivity } from "../../services/userService";
 import ContentItem from "./UserContent";
+import { Thread } from "../../pages/HomePage";
 
 type SortField = "createdAt" | "likes" | "dislikes" | "comments";
-
-interface Thread {
-    id: number;
-    title?: string;
-    content: string;
-    author: string;
-    parentAuthor?: string;
-    createdAt: string;
-    likesCount: number;
-    dislikesCount: number;
-    commentsCount: number;
-}
 
 const UserActivity: React.FC<{ username: string }> = ({ username }) => {
     const [threads, setThreads] = useState<Thread[]>([]);
@@ -26,6 +15,7 @@ const UserActivity: React.FC<{ username: string }> = ({ username }) => {
     const [activeTab, setActiveTab] = useState("overview");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<SortField>("createdAt");
+    const theme = useTheme();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -110,16 +100,16 @@ const UserActivity: React.FC<{ username: string }> = ({ username }) => {
                 sx={{ marginBottom: 2 }}
 
             >
-                <Tab value="overview" label="Overview" sx = {{ color: "text.primary" }}/>
-                <Tab value="threads" label="Threads" sx = {{ color: "text.primary" }}/>
-                <Tab value="comments" label="Comments" sx = {{ color: "text.primary" }}/>
+                <Tab value="overview" label="Overview" sx = {{ color: theme.palette.text.primary }}/>
+                <Tab value="threads" label="Threads" sx = {{ color: theme.palette.text.primary }}/>
+                <Tab value="comments" label="Comments" sx = {{ color: theme.palette.text.primary }}/>
             </Tabs>
             <List>
                 {filteredContent.map((item) => (
                     <ContentItem
                         key={item.id}
                         id={item.id}
-                        title={item.title}
+                        title={item.title ?? ""}
                         content={item.content}
                         author={item.author}
                         parentAuthor={item.parentAuthor}

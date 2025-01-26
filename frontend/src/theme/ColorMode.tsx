@@ -26,23 +26,38 @@ const ColorModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         const lightThemeConfig = {
             palette: {
                 mode: "light" as PaletteMode,
-                primary: { main: "#00246B", contrastText: "#FFFFFF" },
-                secondary: { main: "#408EC6", contrastText: "#FFFFFF" },
-                background: { default: "#EDF4F2", paper: "#C4DFE6" },
-                text: { primary: "#000000", secondary: "##FFFFFF" },
+                primary: { main: "#556CD6", contrastText: "#FFFFFF" },
+                secondary: { main: "#408EC6", contrastText: "#408EC6" }, 
+                danger: { main: "#D32F2F", contrastText: "#FFFFFF" }, 
+                background: { 
+                    default: "#F6E6CF", // Beige
+                    paper: "rgba(246, 230, 207, 0.85)",
+                },
+                text: { 
+                    primary: "#2B2B2B", 
+                    secondary: "#555555", 
+                },
             },
-        };
-
+        };        
+        
         const darkThemeConfig = {
             palette: {
                 mode: "dark" as PaletteMode,
-                primary: { main: "#00246B", contrastText: "#FFFFFF" },
-                secondary: { main: "#408EC6", contrastText: "#FFFFFF" },
-                background: { default: "#121212", paper: "#1E1E1E" },
-                text: { primary: "#FFFFFF", secondary: "#000000" },
+                primary: { main: "#2C2C54", contrastText: "#FFFFFF" },
+                secondary: { main: "#333333", contrastText: "#AECBFA" },
+                danger: { main: "#640000", contrastText: "#FFFFFF" },
+                background: { 
+                    default: "#121212", // Deep black background
+                    paper: "rgba(28, 28, 28, 0.85)", // Slightly lighter for content cards
+                },
+                text: { 
+                    primary: "#FFFFFF", 
+                    secondary: "#B0B0B0", 
+                },
             },
         };
-
+                        
+        
         const themeConfig = isLight ? lightThemeConfig : darkThemeConfig;
 
         return createTheme({
@@ -67,11 +82,11 @@ const ColorModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }
                 },
                 MuiTab: {
                     styleOverrides: {
-                        root: {
+                        root: ({ theme }: { theme: any }) => ({
                             "&.Mui-selected": {
-                                color: "#5661bf",
+                                color: theme.palette.secondary.contrastText
                             },
-                        },
+                        }),
                     },
                 },
             },

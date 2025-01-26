@@ -3,7 +3,6 @@ package config
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 
 	_ "github.com/lib/pq"
@@ -61,9 +60,10 @@ func InitializeDatabase() (*sql.DB, error) {
 				parent_id INTEGER,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				depth INTEGER DEFAULT 0,
-				FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+				FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+				FOREIGN KEY (parent_id) REFERENCES threads(id) ON DELETE CASCADE
 			);
-		`}, // Note: parent_id foreign key added separately
+		`},
 		{"saved_threads", `
 			CREATE TABLE IF NOT EXISTS saved_threads (
 				id SERIAL PRIMARY KEY,
@@ -105,28 +105,6 @@ func InitializeDatabase() (*sql.DB, error) {
 			return nil, fmt.Errorf("failed to create %s table: %v", item.name, err)
 		}
 		fmt.Printf("%s table created!\n", item.name)
-	}
-
-	// Add the self-referencing foreign key to the threads table
-	_, err = db.Exec(`
-		DO $$
-		BEGIN
-			IF NOT EXISTS (
-				SELECT 1
-				FROM information_schema.table_constraints
-				WHERE constraint_name = 'threads_parent_id_fkey'
-				AND table_name = 'threads'
-			) THEN
-				ALTER TABLE threads
-				ADD CONSTRAINT threads_parent_id_fkey
-				FOREIGN KEY (parent_id) REFERENCES threads(id) ON DELETE CASCADE;
-			END IF;
-		END $$;
-	`)
-	if err != nil {
-		log.Printf("Error adding foreign key constraint: %v", err)
-	} else {
-		fmt.Println("Foreign key constraint added successfully or already exists.")
 	}
 
 	// Initial seeds

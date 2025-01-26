@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Divider } from "@mui/material";
+import { Typography, Paper, Divider, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 
 interface ContentItemProps {
@@ -12,61 +12,78 @@ interface ContentItemProps {
 }
 
 const ContentItem: React.FC<ContentItemProps> = ({ id, title, content, author, parentAuthor, createdAt }) => {
-    const threadLink = `/threads/${id}`;
-    const profileLink = `/profile/${author}`;
-    const parentProfileLink = parentAuthor ? `/profile/${parentAuthor}` : null;
-    const formattedDate = new Date(createdAt).toLocaleString();
-  
-    return (
-    <Box sx={{ mb: 2 }}>
-      {/* Navigate to Thread/Comment via ID */}
+  const threadLink = `/threads/${id}`;
+  const profileLink = `/profile/${author}`;
+  const parentProfileLink = parentAuthor ? `/profile/${parentAuthor}` : null;
+  const formattedDate = new Date(createdAt).toLocaleString();
+  const theme = useTheme();
+
+  return (
+    <Paper elevation={3} sx={{ padding: 2, marginBottom: 2 }}>
+      {/* Title Section */}
       {title && (
         <Typography
           variant="h6"
-          sx={{ mb: 1 }}
           component={Link}
           to={threadLink}
-          style={{ textDecoration: "none", color: "inherit" }}
+          sx={{
+            textDecoration: "none",
+            color: "inherit",
+            fontWeight: "bold",
+            marginBottom: 1,
+          }}
         >
           {title}
         </Typography>
       )}
-        <br></br>
-        
-        {/* Content */}
-        <Typography
-            variant="body1"
-            component={Link}
-            to={threadLink}
-            style={{ textDecoration: "none", color: "inherit" }}
+
+      {/* Content Section */}
+      <Typography
+        variant="body1"
+        component={Link}
+        to={threadLink}
+        sx={{
+          textDecoration: "none",
+          color: "inherit",
+          marginBottom: 2,
+          display: "block",
+        }}
+      >
+        {content}
+      </Typography>
+
+      <Divider sx={{ marginY: 2 }} />
+
+      {/* Metadata Section */}
+      <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
+        <Link
+          to={profileLink}
+          style={{
+            textDecoration: "none",
+            fontWeight: "bold",
+            color: theme.palette.secondary.contrastText, 
+          }}
         >
-            {content}
-        </Typography>
-
-        {/* Metadata */}
-        <Typography variant="body2" color="text.primary">
+          {author}
+        </Link>
+        {parentAuthor && parentProfileLink && (
+          <span>
+            {` • Replied to `}
             <Link
-            to={profileLink}
-            style={{ textDecoration: "none", color: "inherit", fontWeight: "bold" }}
+              to={parentProfileLink}
+              style={{
+                textDecoration: "none",
+                fontWeight: "bold",
+                color: theme.palette.secondary.contrastText, 
+              }}
             >
-            {author}
+              {parentAuthor}
             </Link>
-            {parentAuthor && parentProfileLink && (
-            <span>
-                {` • Replied to `}
-                <Link
-                to={parentProfileLink}
-                style={{ textDecoration: "none", color: "inherit", fontWeight: "bold" }}
-                >
-                {parentAuthor}
-                </Link>
-            </span>
-            )}
-            {` • ${formattedDate}`}
-        </Typography>
-
-        <Divider sx={{ mt: 2 }} />
-    </Box>
+          </span>
+        )}
+        {` • ${formattedDate}`}
+      </Typography>
+    </Paper>
   );
 };
 

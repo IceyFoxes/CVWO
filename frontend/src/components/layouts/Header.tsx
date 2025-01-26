@@ -1,8 +1,9 @@
 import React, { useContext } from "react";
 import { AppBar, Toolbar, Typography, IconButton, Box, useTheme } from "@mui/material";
-import { Link } from "react-router-dom";
+import MenuIcon from "@mui/icons-material/Menu";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
+import { Link } from "react-router-dom";
 import { ColorModeContext } from "../../theme/ColorMode";
 import { LinkButton, PrimaryButton } from "../shared/Buttons";
 import Login from "../modals/Login";
@@ -12,7 +13,11 @@ import { useAlert } from "../contexts/AlertContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useModal } from "../hooks/useModal";
 
-const Header: React.FC = () => {
+interface HeaderProps {
+    toggleSidebar: () => void; 
+}
+
+const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
     const { mode, toggleColorMode } = useContext(ColorModeContext);
     const { showAlert } = useAlert();
     const { isLoggedIn, username, logout } = useAuth();
@@ -50,9 +55,19 @@ const Header: React.FC = () => {
                     justifyContent: "space-between",
                     alignItems: "center",
                     flexWrap: "wrap",
-                    gap: { xs: 2, sm: 4 }, 
+                    gap: { xs: 2, sm: 4 },
                 }}
             >
+                {/* Menu Icon for Sidebar */}
+                <IconButton
+                    edge="start"
+                    aria-label="menu"
+                    onClick={toggleSidebar}
+                    sx={{ color: theme.palette.primary.contrastText }}
+                >
+                    <MenuIcon />
+                </IconButton>
+
                 {/* Title */}
                 <Typography
                     sx={{
@@ -69,7 +84,7 @@ const Header: React.FC = () => {
                         to="/"
                         style={{
                             textDecoration: "none",
-                            color: "#FFFFFF",
+                            color: theme.palette.primary.contrastText,
                         }}
                     >
                         School Forum
@@ -105,7 +120,7 @@ const Header: React.FC = () => {
                     <IconButton
                         onClick={toggleColorMode}
                         sx={{
-                            color: "#FFFFFF",
+                            color: theme.palette.primary.contrastText,
                             borderRadius: "50%",
                             transition: "transform 0.3s ease",
                             "&:hover": {
@@ -113,7 +128,7 @@ const Header: React.FC = () => {
                             },
                         }}
                     >
-                        {mode === "dark" ? <DarkModeIcon /> : <LightModeIcon />}
+                        {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
                     </IconButton>
 
                     {/* User Section */}

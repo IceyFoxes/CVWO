@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { TextField, Typography } from "@mui/material";
+import { TextField } from "@mui/material";
 import CustomModal from "../shared/Modal";
+import { useAlert } from "../contexts/AlertContext";
 
 interface PasswordChangeModalProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: (data: { currentPassword: string; newPassword: string }) => void;
+  onConfirm: (data: { currentPassword: string; newPassword: string }) => Promise<boolean>;
 }
 
 const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
@@ -16,16 +17,33 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const { showAlert } = useAlert();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (newPassword !== confirmPassword) {
-      setError("New passwords do not match.");
+        showAlert("New passwords do not match.", "error");
+        return;
+    }
+
+    if (!newPassword || !currentPassword) {
+        showAlert("All fields are required.", "warning");
+        return;
+    }
+    
+    if (newPassword === currentPassword) {
+      showAlert("New password cannot be the same as current password.", "warning");
       return;
     }
-    setError(null);
-    onConfirm({ currentPassword, newPassword });
-  };
+
+    const isPasswordUpdated = await onConfirm({ currentPassword, newPassword });
+
+    if (isPasswordUpdated) {
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        onClose(); // Close the modal only if password update was successful
+    }
+};
 
   return (
     <CustomModal
@@ -61,11 +79,6 @@ const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({
         sx={{ my: 2 }}
         required
       />
-      {error && (
-        <Typography color="error" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-      )}
     </CustomModal>
   );
 };

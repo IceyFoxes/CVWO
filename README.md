@@ -5,7 +5,8 @@ This is a simple web forum application developed as part of CVWO's winter assign
 - **Deployed here**: [https://cvwo2025.netlify.app/](https://cvwo2025.netlify.app/)
 - **Hosting**:
   - **Frontend**: Netlify
-  - **Backend & Database**: Render
+  - **Backend**: Render
+  - **Database**: Tembo.io (Render's Database Plan is only 30 days 😭)
 
 ---
 
@@ -20,7 +21,7 @@ This is a simple web forum application developed as part of CVWO's winter assign
 - Profile page with biography, metrics and scores
 - Leaderboard of contribution scores (TBU)
 - Backup automation
-- Images/Animations (TBU)
+- More images/Animations (TBU)
 - Rank System (TBU)
 
 ---

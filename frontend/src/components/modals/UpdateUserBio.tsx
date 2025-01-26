@@ -17,6 +17,15 @@ const UpdateUserBio: React.FC<UpdateUserBioProps> = ({ open, username, currentBi
     const { showAlert } = useAlert();
 
     const handleSave = async () => {
+        if (!bio.trim()) {
+            showAlert("Bio cannot be empty.", "warning");
+            return;
+        }
+        if (bio.length > 300) {
+            showAlert("Bio cannot exceed 300 characters.", "warning");
+            return;
+        }
+
         try {
             await updateUserBio(username, bio);
             showAlert("Bio updated successfully!", "success");
@@ -33,9 +42,11 @@ const UpdateUserBio: React.FC<UpdateUserBioProps> = ({ open, username, currentBi
             open={open}
             title="Update Bio"
             onClose={onClose}
-            onConfirm={handleSave} 
+            onConfirm={handleSave}
         >
             <TextField
+                label="Enter your new bio"
+                placeholder="Write something about yourself..."
                 fullWidth
                 multiline
                 rows={4}

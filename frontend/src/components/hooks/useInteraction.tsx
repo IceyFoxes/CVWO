@@ -22,7 +22,7 @@ const useInteraction = ({
     const [count, setCount] = useState(0);
     const { showAlert } = useAlert();
     const { isLoggedIn, username } = useAuth();
-    const { triggerRefresh } = useRefresh(); // Use refresh context
+    const { triggerRefresh } = useRefresh(); 
 
     useEffect(() => {
         if (!username || !isLoggedIn) return;
@@ -33,6 +33,7 @@ const useInteraction = ({
                 setIsActive(state.isActive);
                 setCount(state.count);
             } catch (error) {
+                showAlert("Error fetching interaction status!", "error");
                 console.error("Error fetching interaction status:", error);
             }
         };
@@ -42,7 +43,7 @@ const useInteraction = ({
 
     const toggleInteraction = async () => {
         if (!username || !isLoggedIn) {
-            showAlert("You must be logged in to perform this action.", "error");
+            showAlert("You must be logged in to perform this action.", "warning");
             return;
         }
 

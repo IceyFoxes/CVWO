@@ -133,10 +133,10 @@ const CategoryPage: React.FC = () => {
                         >
                             {category ?? "All Threads"}
                         </Typography>
-
-                        {/* Search Bar */}
-                        <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-
+                        <div style={{marginBottom: 20}}>
+                            {/* Search Bar */}
+                            <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery}/>
+                        </div>
                         {/* Tag Groups */}
                         {Object.entries(tagGroups).map(([tag, threads]) => {
                             const { page, sortBy } = paginationState[tag] || { page: 1, sortBy: "createdAt" };

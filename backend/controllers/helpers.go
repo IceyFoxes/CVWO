@@ -34,7 +34,7 @@ func validateThread(db *sql.DB, isEdit bool, thread *struct {
 	var errors []string
 
 	// List of prohibited words
-	var prohibitedWords = []string{"bitcoin", "tesla"}
+	var prohibitedWords = []string{"mother", "child"}
 
 	// Validate content
 	if thread.Content == nil || len(*thread.Content) == 0 {

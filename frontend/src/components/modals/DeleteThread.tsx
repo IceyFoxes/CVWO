@@ -12,6 +12,10 @@ const DeleteThread: React.FC<{ threadId: string; authorized?: boolean }> = ({ th
     const navigate = useNavigate();
     const { username } = useAuth();
 
+    if (!authorized) {
+        return null;
+    }
+
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
 
@@ -34,10 +38,6 @@ const DeleteThread: React.FC<{ threadId: string; authorized?: boolean }> = ({ th
             showAlert("Failed to delete the thread. Please try again.", "error");
         }
     };
-
-    if (!authorized) {
-        return null;
-    }
 
     return (
         <div>

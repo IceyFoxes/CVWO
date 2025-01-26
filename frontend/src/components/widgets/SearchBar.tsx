@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, TextField } from "@mui/material";
+import { Box, Paper, TextField } from "@mui/material";
 import { inputStyles } from "../shared/Styles";
 
 interface SearchBarProps {
@@ -9,17 +9,19 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, onSearchChange }) => {
     return (
-        <Box sx={{ marginBottom: 2 }}>
-            <TextField
-                fullWidth
-                variant="outlined"
-                label="Search"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search for items..."
-                sx={inputStyles}
-            />
-        </Box>
+        <Paper>
+            <Box>
+                <TextField
+                    fullWidth
+                    variant="outlined"
+                    label="Search"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    placeholder="Search for items..."
+                    sx={inputStyles}
+                />
+            </Box>
+        </Paper>
     );
 };
 

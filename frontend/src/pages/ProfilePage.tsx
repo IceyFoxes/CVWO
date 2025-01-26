@@ -45,15 +45,18 @@ const ProfilePage: React.FC = () => {
     const { showAlert } = useAlert();
     const { refreshFlag } = useRefresh();
 
-    const handlePasswordChange = async (data: { currentPassword: string; newPassword: string }) => {
+    const handlePasswordChange = async (data: { currentPassword: string; newPassword: string }): Promise<boolean> => {
         try {
             await updatePassword(username ?? "", data.currentPassword, data.newPassword);
             showAlert("Password updated successfully!", "success");
-            closePasswordModal();
+            closePasswordModal(); 
+            return true; 
         } catch (error: any) {
-            showAlert(error.response?.data.error || "Failed to update password.", "error");
+            const errorMessage = error.response?.data?.error || "Failed to update password.";
+            showAlert(errorMessage, "error");
+            return false; 
         }
-    };
+    };    
 
     const handleBioUpdate = (newBio: string) => {
         if (userInfo) {
@@ -97,7 +100,14 @@ const ProfilePage: React.FC = () => {
         <Layout>
             <Box p={4} maxWidth="800px" margin="auto">
                 {userInfo && (
-                    <>
+                    <Box 
+                        sx={{ 
+                            display: "flex", 
+                            flexDirection: "column", 
+                            gap: 2,
+                            alignItems: "flex-start",
+                        }}
+                    >
                         <UserInfo
                             username={usernameProfile ?? ""}
                             joinDate={userInfo.joinDate}
@@ -105,11 +115,16 @@ const ProfilePage: React.FC = () => {
                             bio={userInfo.bio}
                         />
                         {username === usernameProfile && (
-                            <PrimaryButton variant="contained" color="primary" onClick={openBioModal} sx={{ mt: 2 }}>
+                            <PrimaryButton 
+                                variant="contained" 
+                                color="primary" 
+                                onClick={openBioModal} 
+                                sx={{ alignSelf: "flex-start", marginLeft: 2}}
+                            >
                                 Update Bio
                             </PrimaryButton>
                         )}
-                    </>
+                    </Box>
                 )}
 
                 {userMetrics && (

@@ -16,6 +16,7 @@ export interface Thread {
     content: string;
     category?: string | null;
     author: string;
+    parentAuthor?: string;
     createdAt: string;
     userId: number;
     parentId?: number | null;

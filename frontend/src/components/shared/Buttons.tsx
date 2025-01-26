@@ -1,67 +1,75 @@
-import React from 'react';
-import { Button, ButtonProps } from '@mui/material';
-import { buttonStyles } from './Styles';
-import { Link } from 'react-router-dom';
-import { useTheme } from "@mui/material/styles";
-import { red } from '@mui/material/colors';
+import { styled } from "@mui/material/styles";
+import Button, { ButtonProps } from "@mui/material/Button";
+import { Link } from "react-router-dom";
 
-export const PrimaryButton: React.FC<ButtonProps> = (props) => {
-    const theme = useTheme();
+// Primary Button
+export const PrimaryButton = styled(Button)<ButtonProps>(({ theme }) => ({
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+    borderRadius: "8px",
+    padding: "8px 16px",
+    transition: "all 0.3s ease",
+    boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+    "&:hover": {
+        backgroundColor: theme.palette.primary.dark,
+        boxShadow: "0px 6px 10px rgba(0, 0, 0, 0.2)",
+    },
+    "&:active": {
+        transform: "scale(0.98)",
+    },
+    "&:disabled": {
+        backgroundColor: theme.palette.action.disabledBackground,
+        color: theme.palette.action.disabled,
+    },
+}));
 
-    return (
-        <Button
-            variant="contained"
-            {...props}
-            sx={{
-                backgroundColor: theme.palette.primary.main,
-                color: theme.palette.primary.contrastText,
-                "&:hover": {
-                    backgroundColor: theme.palette.primary.dark, 
-                },
-                ...(buttonStyles as any),
-                ...(props.sx || {}),
-            }}
-        >
-            {props.children}
-        </Button>
-    );
-};
+// Danger Button
+export const DangerButton = styled(Button)<ButtonProps>(({ theme }) => ({
+    backgroundColor: theme.palette.danger.main,
+    color: theme.palette.danger.contrastText,
+    borderRadius: "8px",
+    padding: "8px 16px",
+    transition: "all 0.3s ease",
+    boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+    "&:hover": {
+        backgroundColor: "#7f0000", // Slightly darker red
+        boxShadow: "0px 6px 10px rgba(0, 0, 0, 0.2)",
+    },
+    "&:active": {
+        transform: "scale(0.98)",
+    },
+    "&:disabled": {
+        backgroundColor: theme.palette.action.disabledBackground,
+        color: theme.palette.action.disabled,
+    },
+}));
 
-export const DangerButton: React.FC<ButtonProps> = (props) => {
-    const theme = useTheme();
-    
-    return (
-        <Button
-            color="error"
-            {...props}
-            sx={{
-                ...(buttonStyles as any),
-                ...(props.sx || {}),
-                backgroundColor: red[500],
-                color: theme.palette.primary.contrastText,
-                '&:hover': {
-                    backgroundColor: '#d32f2f',
-                },
-            }}
-        >
-            {props.children}
-        </Button>
-    );
-};
 
 interface LinkButtonProps extends ButtonProps {
     to: string; // Require 'to' for routing
 }
 
-export const LinkButton: React.FC<LinkButtonProps> = ({ to, ...props }) => {
-    return (
-        <Button   
-            component={Link}
-            to={to}
-            variant="contained"
-            {...props}
-        >
-            {props.children}
-        </Button>
-    );
-};
+export const LinkButton = styled(({ to, ...props }: LinkButtonProps) => (
+    <Button component={Link} to={to} {...props} />))
+    (({ theme }) => ({
+        textDecoration: "none",
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        borderRadius: "8px",
+        padding: "8px 16px",
+        transition: "all 0.3s ease",
+        "&:hover": {
+            textDecoration: "underline", // Underline on hover
+            backgroundColor: theme.palette.primary.dark,
+            transform: "scale(1.02)", // Slight enlarge on hover
+        },
+        "&:active": {
+            transform: "scale(0.98)", // Slight shrink on click
+        },
+        "&:disabled": {
+            backgroundColor: theme.palette.action.disabledBackground,
+            color: theme.palette.action.disabled,
+            textDecoration: "none",
+        },
+    })
+);

@@ -60,7 +60,7 @@ const LikesDislikes: React.FC<{ threadId: string }> = ({ threadId }) => {
                 <span>Likes: {likesCount}</span>
                 <span style={{ marginLeft: "10px" }}>Dislikes: {dislikesCount}</span>
             </div>
-            <div>
+            <div style={{ display: "flex", gap: "15px" }}>
                 <PrimaryButton onClick={likeHook.toggleInteraction}>
                     {likeHook.isActive ? "Unlike" : "Like"}
                 </PrimaryButton>

@@ -21,19 +21,37 @@ const Register: React.FC<RegisterProps> = ({ open, onClose }) => {
     const { showAlert } = useAlert();
     const { login } = useAuth();
 
+    const validateInput = (): boolean => {
+        if (!username.trim() || username.length < 3) {
+            showAlert("Username must be at least 3 characters long.", "warning");
+            return false;
+        }
+        if (!password.trim() || password.length < 6) {
+            showAlert("Password must be at least 6 characters long.", "warning");
+            return false;
+        }
+        return true;
+    };
+
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!validateInput()) return;
+
         setLoading(true);
         try {
-            await registerUser(username, password);
+            await registerUser(username, password); 
             showAlert("Registration successful!", "success");
-            const data = await loginUser(username, password);
 
+            const data = await loginUser(username, password); // Automatically log in
             login(username, data.token);
-            navigate("/");
-            onClose();
+
+            navigate("/"); 
+            onClose(); 
         } catch (error: any) {
-            showAlert(error.response?.data?.error || "Unexpected error occurred. Please try again.", "error");
+            const errorMessage =
+                error.response?.data?.error ||
+                "Registration failed. Please try again.";
+            showAlert(errorMessage, "error");
         } finally {
             setLoading(false);
         }
@@ -60,7 +78,7 @@ const Register: React.FC<RegisterProps> = ({ open, onClose }) => {
                     margin="normal"
                 />
                 {loading ? (
-                    <Loader></Loader>
+                    <Loader />
                 ) : (
                     <PrimaryButton type="submit" variant="contained" color="primary" fullWidth>
                         Register
@@ -72,4 +90,3 @@ const Register: React.FC<RegisterProps> = ({ open, onClose }) => {
 };
 
 export default Register;
-
