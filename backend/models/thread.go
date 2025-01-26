@@ -213,7 +213,7 @@ func FetchCommentsByThreadID(db *sql.DB, threadID int, searchQuery, sortBy strin
 				COALESCE(ct.category, NULL) AS category,
 				COALESCE(ct.tag, NULL) AS tag
 			FROM threads t
-			LEFT JOIN CommentTree ct ON t.parent_id = ct.id
+			INNER JOIN CommentTree ct ON t.parent_id = ct.id
 		)
 		SELECT 
 			ct.id, 
