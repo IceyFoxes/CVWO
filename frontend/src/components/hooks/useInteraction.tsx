@@ -39,7 +39,7 @@ const useInteraction = ({
         };
 
         fetchInteractionStatus();
-    }, [threadId, username, isLoggedIn, fetchState]);
+    }, [threadId, username, isLoggedIn, showAlert, fetchState]);
 
     const toggleInteraction = async () => {
         if (!username || !isLoggedIn) {
@@ -58,7 +58,7 @@ const useInteraction = ({
                 setCount((prev) => prev + 1);
             }
             setIsActive(!isActive);
-            triggerRefresh(); // Trigger refresh on interaction
+            triggerRefresh(); 
         } catch (error) {
             showAlert("Failed to update interaction. Please try again.", "error");
         }
