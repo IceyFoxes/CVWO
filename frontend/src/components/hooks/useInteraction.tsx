@@ -39,7 +39,8 @@ const useInteraction = ({
         };
 
         fetchInteractionStatus();
-    }, [threadId, username, isLoggedIn, showAlert, fetchState]);
+        // eslint-disable-next-line
+    }, [threadId, username, isLoggedIn, showAlert]);
 
     const toggleInteraction = async () => {
         if (!username || !isLoggedIn) {

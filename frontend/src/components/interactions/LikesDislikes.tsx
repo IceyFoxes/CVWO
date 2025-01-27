@@ -52,7 +52,7 @@ const LikesDislikes: React.FC<{ threadId: string }> = ({ threadId }) => {
         };
 
         fetchCounts();
-    }, [threadId, likeHook.isActive, dislikeHook.isActive]); // Refetch counts on state change
+    }, [threadId, likeHook.isActive, dislikeHook.isActive]);
 
     return (
         <div>

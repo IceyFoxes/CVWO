@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { loginUser } from "../../services/userService";
 import { TextField, Button } from "@mui/material";
 import CustomModal from "../shared/Modal";
@@ -16,7 +15,6 @@ const Login: React.FC<LoginProps> = ({ open, onClose }) => {
     const [username, setUsername] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
-    const navigate = useNavigate();
     const { showAlert } = useAlert();
     const { login } = useAuth();
 
@@ -27,7 +25,6 @@ const Login: React.FC<LoginProps> = ({ open, onClose }) => {
             const data = await loginUser(username, password);
             showAlert("Login successful!", "success");
             login(username, data.token);
-            navigate("/");
             onClose();
         } catch (error: any) {
             showAlert(error.response?.data?.error || "Unexpected error occurred. Please try again.", "error");

@@ -65,14 +65,14 @@ func GetThreadAuthorization(c *gin.Context, db *sql.DB) {
 	username := c.DefaultQuery("username", "")
 
 	if username == "" {
-		c.JSON(200, gin.H{"authorized": false, "message": "User is not authorized to modify this thread"})
+		c.JSON(http.StatusOK, gin.H{"authorized": false, "message": "User is not authorized to modify this thread"})
 		return
 	}
 
 	// Fetch user ID
 	userID, err := models.GetUserIDFromUsername(db, username)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid userID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid userID"})
 		return
 	}
 
@@ -88,11 +88,11 @@ func GetThreadAuthorization(c *gin.Context, db *sql.DB) {
 
 	// If the user is not authorized
 	if !authorized {
-		c.JSON(200, gin.H{"authorized": false, "message": "User is not authorized to modify this thread"})
+		c.JSON(http.StatusOK, gin.H{"authorized": false, "message": "User is not authorized to modify this thread"})
 		return
 	}
 
-	c.JSON(200, gin.H{"authorized": true, "message": "User is authorized to modify this thread"})
+	c.JSON(http.StatusOK, gin.H{"authorized": true, "message": "User is authorized to modify this thread"})
 }
 
 // view single thread and ALL its child comments (Recursive)
@@ -232,7 +232,7 @@ func UpdateThread(c *gin.Context, db *sql.DB) {
 	// Validate user
 	userID, err := models.GetUserIDFromUsername(db, username)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to validate user"})
 		return
 	}
 
@@ -295,7 +295,7 @@ func DeleteThread(c *gin.Context, db *sql.DB) {
 	// Validate and get the user ID using the helper function
 	userID, err := models.GetUserIDFromUsername(db, username)
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get User ID"})
 		return
 	}
 
@@ -309,18 +309,18 @@ func DeleteThread(c *gin.Context, db *sql.DB) {
 	// Check ownership or admin status
 	authorized := models.CheckThreadOwnershipOrAdmin(db, username, userID, threadID)
 	if !authorized {
-		c.JSON(403, gin.H{"error": "You are not authorized to delete this thread"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "You are not authorized to delete this thread"})
 		return
 	}
 
 	// Delete the thread from the database
 	err = models.DeleteThread(db, threadID)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to delete thread"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete thread"})
 		return
 	}
 
-	c.JSON(200, gin.H{"message": "Thread deleted!"})
+	c.JSON(http.StatusOK, gin.H{"message": "Thread deleted!"})
 }
 
 // Create a comment as a thread
@@ -345,10 +345,16 @@ func CommentThread(c *gin.Context, db *sql.DB) {
 
 	// Bind JSON payload for comment content
 	var comment struct {
-		Content string `json:"content"`
+		Content *string `json:"content"`
 	}
 	if err := c.ShouldBindJSON(&comment); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		return
+	}
+
+	errors := validateComment(&comment)
+	if len(errors) > 0 {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": errors})
 		return
 	}
 
@@ -365,7 +371,7 @@ func CommentThread(c *gin.Context, db *sql.DB) {
 	}
 
 	// Use the model to create the comment
-	err = models.CreateComment(db, comment.Content, userID, threadID, parentDepth+1)
+	err = models.CreateComment(db, *comment.Content, userID, threadID, parentDepth+1)
 	if err != nil {
 		if err.Error() == "maximum nesting depth reached" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum nesting depth reached"})

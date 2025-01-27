@@ -129,12 +129,12 @@ const ThreadDetails: React.FC = () => {
 
     const handleCommentSubmit = async () => {
         if (!username) {
-            showAlert("You must be logged in to comment.", "error");
+            showAlert("You must be logged in to comment.", "warning");
             return;
         }
 
         if (!commentContent.trim()) {
-            showAlert("Comment content cannot be empty.", "error");
+            showAlert("Comment content cannot be empty.", "warning");
             return;
         }
 
@@ -144,15 +144,25 @@ const ThreadDetails: React.FC = () => {
             setCommentContent("");
             setShowCommentBox(false);
             triggerRefresh();
-        } catch (error) {
-            console.error("Failed to add comment:", error);
-            showAlert("Failed to add comment. Please try again.", "error");
+        } catch (err: any) {
+            let errorMessage = "An error occurred while creating the thread.";
+
+            if (err.response?.data?.error) {
+                errorMessage = err.response.data.error;
+            } else if (err.response?.data?.errors) {
+                errorMessage = err.response.data.errors.join(", ");
+            }
+
+            showAlert(errorMessage, "error");
         }
     };
 
     const sortedComments = useMemo(() => {
-        const sorted = [...comments];
-        sorted.sort((a, b) => {
+        const filtered = comments.filter((comment) =>
+            comment.content.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    
+        filtered.sort((a, b) => {
             switch (sortBy) {
                 case "createdAt":
                     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -164,8 +174,9 @@ const ThreadDetails: React.FC = () => {
                     return 0;
             }
         });
-        return sorted;
-    }, [comments, sortBy]);
+    
+        return filtered;
+    }, [comments, searchQuery, sortBy]);    
 
     const commentTree = useMemo(() => buildCommentTree(sortedComments), [sortedComments]);
 
@@ -342,15 +353,17 @@ const ThreadDetails: React.FC = () => {
                 )}
 
                 {/* Toggle Comment Box Button */}
-                <PrimaryButton
-                    onClick={() => setShowCommentBox(!showCommentBox)}
-                    sx={{
-                        marginBottom: 4,
-                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                    }}
-                >
-                    {showCommentBox ? "Cancel Comment" : "Add Comment"}
-                </PrimaryButton>
+                {username && (
+                    <PrimaryButton
+                        onClick={() => setShowCommentBox(!showCommentBox)}
+                        sx={{
+                            marginBottom: 4,
+                            fontSize: { xs: "0.875rem", sm: "1rem" },
+                        }}
+                    >
+                        {showCommentBox ? "Cancel Comment" : "Add Comment"}
+                    </PrimaryButton>
+                 )}
 
                 {/* Comments Title */}
                 <Typography

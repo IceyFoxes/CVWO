@@ -61,10 +61,13 @@ func validateThread(db *sql.DB, isEdit bool, thread *struct {
 	if thread.Title != nil {
 		title := strings.ToLower(*thread.Title) // Dereference pointer
 
-		// Check for prohibited words in the title
-		for _, word := range prohibitedWords {
-			if strings.Contains(title, word) {
-				errors = append(errors, fmt.Sprintf("Title contains prohibited word: %s", word))
+		// Check for prohibited words in the content (whole word match)
+		words := strings.Fields(*thread.Content)
+		for _, word := range words {
+			for _, prohibited := range prohibitedWords {
+				if word == prohibited {
+					errors = append(errors, fmt.Sprintf("Content contains prohibited word: %s", prohibited))
+				}
 			}
 		}
 
@@ -86,6 +89,43 @@ func validateThread(db *sql.DB, isEdit bool, thread *struct {
 			} else if count > 0 {
 				errors = append(errors, "Title must be unique")
 			}
+		}
+	}
+
+	return errors
+}
+
+// Helper function to validate content of created thread
+func validateComment(comment *struct {
+	Content *string `json:"content"` // Content is nullable
+}) []string {
+	var errors []string
+
+	// List of prohibited words
+	var prohibitedWords = []string{"mother", "child"}
+
+	// Validate content
+	if comment.Content == nil || len(*comment.Content) == 0 {
+		errors = append(errors, "Content is required")
+	} else {
+		content := strings.ToLower(*comment.Content) // Dereference pointer
+
+		// Check for prohibited words in the content (whole word match)
+		words := strings.Fields(content) // Tokenize content into words
+		for _, word := range words {
+			for _, prohibited := range prohibitedWords {
+				if word == prohibited {
+					errors = append(errors, fmt.Sprintf("Content contains prohibited word: %s", prohibited))
+				}
+			}
+		}
+
+		// Validate content length
+		if len(content) < 5 {
+			errors = append(errors, "Content must be at least 5 characters long")
+		}
+		if len(content) > 500 {
+			errors = append(errors, "Content must be no more than 500 characters long")
 		}
 	}
 
