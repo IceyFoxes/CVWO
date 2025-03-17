@@ -2,7 +2,7 @@
 
 This is a simple web forum application developed as part of CVWO's winter assignment. The application includes a React frontend, a Go (Gin) backend, and a PostgreSQL database.
 
-- **Deployed here**: [https://cvwo2025.netlify.app/](https://forum2025.netlify.app/)
+- **Deployed here**: [https://forum2025.netlify.app/](https://forum2025.netlify.app/)
 - **Hosting**:
   - **Frontend**: Netlify
   - **Backend**: Render
